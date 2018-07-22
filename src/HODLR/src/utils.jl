@@ -1,0 +1,271 @@
+
+function mapf(f::Function, v, nwrk::Int64, plel::Bool)
+  if plel && nwrk > 1 
+    return pmap(f, v, batch_size=max(1, div(length(v), nwrk)))
+  else
+    return map(f, v)
+  end
+end
+
+function saa_shuffle!{T<:Number}(v::Vector{Vector{T}})::Void
+  for j in eachindex(v)
+    rand!(v[j], [-1.0, 1.0])
+  end
+  nothing
+end
+
+function givesaa(len::Int64, sz::Int64)::Vector{Vector{Float64}}
+  vecs = map(x->Array{Float64}(sz), 1:len)
+  saa_shuffle!(vecs)
+  return vecs
+end
+
+function increment!(V::Vector{Int64}, step::Int64)::Void
+  for k in eachindex(V)
+    @inbounds V[k] += step
+  end
+  nothing
+end
+
+function fillall!{T}(target::AbstractVector{T}, src::AbstractVector{T})::Void
+  for j in eachindex(target)
+    @inbounds setindex!(target, src[j], j)
+  end
+  nothing
+end
+
+# Must be of a Pos-Def Symmetric matrix!
+function symfact{T<:Number}(A::Symmetric{T, Matrix{T}})::Matrix{T}
+  factd = eigfact(A)
+  Out   = factd[:vectors]
+  for j in 1:size(Out, 1)
+    @inbounds Out[:,j] .*= sqrt(factd[:values][j])
+  end
+  return Out
+end
+
+function Tmatrix{T<:Number}(R1::Matrix{T}, R2::Matrix{T})::Symmetric{Float64}
+  R1R2t = A_mul_Bt(R1, R2)
+  sz    = size(R1R2t)[1]
+  Out   = Symmetric([eye(sz) R1R2t; transpose(R1R2t) eye(sz)])
+  return Out
+end
+
+function lrsymfact{T<:Number}(U12::Matrix{T}, U21::Matrix{T})::LowRankW{T}
+  sz     = size(U12)[2]
+  Q1, R1 = qr(U12)
+  Q2, R2 = qr(U21)
+  X      = symfact(Tmatrix(R1, R2))-I
+  return LowRankW(cat([1,2], Q1, Q2), X)
+end
+
+function lrx_solterm{T<:Number}(W::LowRankW{T}, v::Array{T})
+  luf  = lufact!(W.X + I)
+  Xv   = W.X*v
+  return Xv - W.X*(luf\Xv)
+end
+
+function lrx_solterm_t{T<:Number}(W::LowRankW{T}, v::Array{T})
+  luf  = lufact!(transpose(W.X) + I)
+  Xv   = At_mul_B(W.X, v)
+  return Xv - At_mul_B(W.X, (luf\Xv))
+end
+
+# This function is kind of a beast. The easiest way to understand the signature is to look at 
+# the call in invapply! below. The purpose of the function is to apply a block diagonal matrix
+# to a dense matrix or vector in a memory-efficient way. But I need to do that in a bunch of ways!
+# I need product, solve, transpose or no transpose, and so on. So I've overloaded all the relevant
+# functions, and the object "apfun" is a variable that represents the relevant FUNCTION. If you
+# follow the nested if/else statements, you'll end up at an Ax_mul_B or Ax_ldiv_B.
+function apply_block{T<:Number}(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Matrix{T}},
+                                            AbstractVector{Base.LinAlg.LU{T, Matrix{T}}}}, 
+                                A::Union{AbstractMatrix{T}, AbstractVector{T}}, 
+                                solv::Bool, transp::Bool)::Union{Matrix{T}, Vector{T}}
+  # Perform a couple of type-tests:
+  Avecbol    = typeof(A)       == Vector{T}
+  # Get application fun:
+  apfun      = solv ? (transp ? At_ldiv_B! : A_ldiv_B!) : (transp ? At_mul_B! : A_mul_B!)
+  # Get indices, make sure function call makes sense:
+  szind      = transp ? 1 : 2
+  inds       = cumsum(map(x->size(x)[szind], Wvec))
+  inds[end] == size(A)[1] || error("The sizes for block-application don't work.")
+  unshift!(inds, 0)
+  # Perform block application:
+  Out = Avecbol ? Array{T}(length(A)) : Array{T}(size(A))
+  if Avecbol
+    for j in eachindex(Wvec)
+      @inbounds strt     = inds[j]+1
+      @inbounds stop     = inds[j+1]
+      @inbounds apfun(view(Out, strt:stop), Wvec[j], A[strt:stop])
+    end
+  else
+    for j in eachindex(Wvec)
+      @inbounds strt     = inds[j]+1
+      @inbounds stop     = inds[j+1]
+      @inbounds apfun(view(Out, strt:stop, :), Wvec[j], A[strt:stop, :])
+    end
+  end
+  return Out
+end
+
+# The big helper function. Further, this is likely the real bottleneck in the code. Because you
+# can't do A_mul_B!(A, B) and just update A or whatever, I have to re-assign this memory. Which
+# I imagine is pretty slow, once the matrix gets big enough.
+function invapply!{T<:Number}(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Matrix{T}},
+                                          AbstractVector{Base.LinAlg.LU{T, Matrix{T}}}}, lvl::Int64,
+                              Uvec::Vector{Vector{Matrix{Float64}}}, 
+                              Vvec::Vector{Vector{Matrix{Float64}}},
+                              parallel::Bool=false)::Void
+  # This parallel implementation is oddly slower than the serial-loop one. I'm not entirely sure why
+  # that is, but if I had to guess it has something to do with zip making a copy when it shouldn't
+  # or something.
+  if parallel
+    jmp   = Int64(length(Wvec)/(2*length(Uvec[lvl])))
+    WvecV = imap(collect, partition(Wvec, jmp, 2*jmp))
+    WvecU = imap(collect, partition(IterTools.drop(Wvec, jmp), jmp, 2*jmp) )
+    Vvec[lvl] = map(x->apply_block(x[1], x[2], true, false), zip(WvecV, Vvec[lvl]))
+    Uvec[lvl] = map(x->apply_block(x[1], x[2], true, false), zip(WvecU, Uvec[lvl]))
+  else
+    jmp = Int64(length(Wvec)/(2*length(Uvec[lvl])))
+    ind = collect(1:jmp)
+    for j in 1:2*length(Uvec[lvl])
+      index = div(j+1, 2)
+      if isodd(j)
+        @inbounds Vvec[lvl][index] .= apply_block(view(Wvec, ind), Vvec[lvl][index], true, false) 
+      else
+        @inbounds Uvec[lvl][index] .= apply_block(view(Wvec, ind), Uvec[lvl][index], true, false) 
+      end
+      increment!(ind, jmp)
+    end
+  end
+  nothing
+end
+
+function DBlock{T<:Number}(K::KernelMatrix{T}, dfun::Function, lndmks::AbstractVector)::DerivativeBlock{T}
+  K1p  = full(KernelMatrix(K.x1, lndmks, K.parms, K.kernel))
+  Kp2  = full(KernelMatrix(lndmks, K.x2, K.parms, K.kernel))
+  K1pd = full(KernelMatrix(K.x1, lndmks, K.parms, dfun))
+  Kp2d = full(KernelMatrix(lndmks, K.x2, K.parms, dfun))
+  return DerivativeBlock(K1p, K1pd, Kp2, Kp2d)
+end
+
+function DBlock_mul{T<:Number}(B::DerivativeBlock{T}, src::Vector{T},
+                                 Kp::Base.LinAlg.Cholesky{T, Matrix{T}}, 
+                                 Kpj::Symmetric{T, Matrix{T}})::Vector{T}
+  out  = B.K1pd*(Kp\(B.Kp2*src))
+  out -= B.K1p*(Kp\(Kpj*(Kp\(B.Kp2*src))))
+  out += B.K1p*(Kp\(B.Kp2d*src))
+  return out
+end
+
+function DBlock_mul_t{T<:Number}(B::DerivativeBlock{T}, src::Vector{T},
+                                 Kp::Base.LinAlg.Cholesky{T, Matrix{T}}, 
+                                 Kpj::Symmetric{T, Matrix{T}})::Vector{T}
+  out  = At_mul_B(B.Kp2, (Kp\At_mul_B(B.K1pd, src)))
+  out -= At_mul_B(B.Kp2, Kp\(Kpj*(Kp\(At_mul_B(B.K1p, src)))))
+  out += At_mul_B(B.Kp2d, Kp\At_mul_B(B.K1p, src) )
+  return out
+end
+
+function DBlock_full{T<:Number}(B::DerivativeBlock{T}, 
+                                 Kp::Base.LinAlg.Cholesky{T, Matrix{T}}, 
+                                 Kpj::Symmetric{T, Matrix{T}})::Matrix{T}
+  Out  = B.K1pd*(Kp\B.Kp2)
+  Out -= B.K1p*(Kp\(Kpj*(Kp\B.Kp2)))
+  Out += B.K1p*(Kp\B.Kp2d)
+  return Out
+end
+
+function SBlock{T<:Number}(K::KernelMatrix{T}, djk::Function, lndmks::AbstractVector)::SecondDerivativeBlock{T}
+  K1pdk = full(KernelMatrix(K.x1, lndmks, K.parms, djk))
+  Kp2dk = full(KernelMatrix(lndmks, K.x2, K.parms, djk))
+  return SecondDerivativeBlock(K1pdk, Kp2dk)
+end
+
+# The many, many parentheses are to ensure that things are done in the reasonable order.
+# Like, for matrices A, B, and vector v, we definitely would want to do A*(B*v) instead of 
+# (A*B)*v, for example. Unfortunately, the code looks all the more like an unreadable mess for it.
+function SDBlock_mul{T<:Number}(Bj::DerivativeBlock{T}, Bk::DerivativeBlock{T}, 
+                                Bjk::SecondDerivativeBlock{T}, src::Vector{T},
+                                Sp::Base.LinAlg.Cholesky{T, Matrix{T}},
+                                Spj::Symmetric{T, Matrix{T}},
+                                Spk::Symmetric{T, Matrix{T}},
+                                Spjk::Symmetric{T, Matrix{T}})
+  # The first term:
+  out  = Bjk.K1pjk*(Sp\(Bj.Kp2*src))
+  out -= Bj.K1pd*(Sp\(Spk*(Sp\(Bj.Kp2*src))))
+  out += Bj.K1pd*(Sp\(Bk.Kp2d*src))
+  # The second term:
+  out += Bk.K1pd*(Sp\(Spj*(Sp\(Bj.Kp2*src))))
+  out -= Bk.K1p*(Sp\(Spk*(Sp\(Spj*(Sp\(Bk.Kp2*src))))))
+  out += Bk.K1p*(Sp\(Spjk*(Sp\(Bk.Kp2*src))))
+  out -= Bk.K1p*(Sp\(Spj*(Sp\(Spk*(Sp\(Bk.Kp2*src))))))
+  out += Bk.K1p*(Sp\(Spj*(Sp\(Bj.Kp2d*src))))
+  # The third term:
+  out += Bk.K1pd*(Sp\(Bk.Kp2*src))
+  out -= Bk.K1p*(Sp\(Spk*(Sp\(Bk.Kp2*src))))
+  out += Bk.K1p*(Sp\(Bjk.Kp2jk*src))
+  # return it, and thank god that it is over:
+  return out
+end
+
+function SDBlock_mul_t{T<:Number}(Bj::DerivativeBlock{T}, Bk::DerivativeBlock{T}, 
+                                Bjk::SecondDerivativeBlock{T}, src::Vector{T},
+                                Sp::Base.LinAlg.Cholesky{T, Matrix{T}},
+                                Spj::Symmetric{T, Matrix{T}},
+                                Spk::Symmetric{T, Matrix{T}},
+                                Spjk::Symmetric{T, Matrix{T}})
+  # The first term:
+  out  = At_mul_B(Bj.Kp2,  Sp\At_mul_B(Bjk.K1pjk, src))
+  out -= At_mul_B(Bj.Kp2,  Sp\(Spk*(Sp\At_mul_B(Bj.K1pd, src))))
+  out += At_mul_B(Bk.Kp2d, Sp\At_mul_B(Bk.K1pd, src))
+  # The second term:
+  out += At_mul_B(Bj.Kp2,  Sp\(Spj*(Sp\At_mul_B(Bk.K1pd, src))))
+  out -= At_mul_B(Bj.Kp2,  Sp\(Spj*(Sp\(Spk*(Sp\At_mul_B(Bk.K1p, src))))))
+  out += At_mul_B(Bj.Kp2,  Sp\(Spjk*(Sp\At_mul_B(Bk.K1p, src))))
+  out -= At_mul_B(Bj.Kp2,  Sp\(Spk*(Sp\(Spj*(Sp\At_mul_B(Bk.K1p, src))))))
+  out += At_mul_B(Bk.Kp2d, Sp\(Spj*(Sp\At_mul_B(Bk.K1p, src))))
+  # The third term:
+  out += At_mul_B(Bj.Kp2d,   Sp\At_mul_B(Bk.K1pd, src))
+  out -= At_mul_B(Bj.Kp2d,   Sp\(Spk*(Sp\At_mul_B(Bk.K1p, src))))
+  out += At_mul_B(Bjk.Kp2jk, Sp\At_mul_B(Bk.K1p, src))
+  # return it, and thank god that it is over:
+  return out
+end
+
+function Deriv2mul{T<:Number}(DKj::DerivativeHODLR{T}, DKk::DerivativeHODLR{T},
+                              D2B2::Vector{Vector{SecondDerivativeBlock{T}}},
+                              D2BL::Vector{Symmetric{T, Matrix{T}}}, 
+                              Sjk::Symmetric{T, Matrix{T}}, src::StridedVector)
+  # Zero out the target vector:
+  target = zeros(eltype(src), length(src))
+  # Apply the leaves:
+  for j in eachindex(DKj.L)
+    c, d = DKj.leafindices[j][3:4]
+    target[c:d] += D2BL[j]*src[c:d]
+  end
+  # Apply the non-leaves:
+  for j in eachindex(DKj.B)
+    for k in eachindex(DKj.B[j])
+      a, b, c, d   = DKj.nonleafindices[j][k]
+      target[c:d] += SDBlock_mul_t(DKj.B[j][k], DKk.B[j][k], D2B2[j][k], src[a:b], DKj.S, DKj.Sj, DKk.Sj, Sjk)
+      target[a:b] += SDBlock_mul(  DKj.B[j][k], DKk.B[j][k], D2B2[j][k], src[c:d], DKj.S, DKj.Sj, DKk.Sj, Sjk)
+    end
+  end
+  return target
+end
+
+# This will be SLOW:
+function Deriv2full{T<:Number}(DKj::DerivativeHODLR{T}, DKk::DerivativeHODLR{T},
+                               D2B2::Vector{Vector{SecondDerivativeBlock{T}}},
+                               D2BL::Vector{Symmetric{T, Matrix{T}}}, 
+                               Sjk::Symmetric{T, Matrix{T}}, sz::Int64)
+  out = zeros(T, sz, sz)
+  for j in 1:sz
+    tmp      = zeros(T, sz)
+    tmp[j]   = one(T)
+    out[:,j] = Deriv2mul(DKj, DKk, D2B2, D2BL, Sjk, tmp)
+  end
+  return out
+end
+
