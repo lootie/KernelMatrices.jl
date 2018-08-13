@@ -130,27 +130,27 @@ Once you have done those things, you can access the two modules---`KernelMatrice
 ```julia
 julia> using KernelMatrices, KernelMatrices.HODLR
 ```
-<b> For both modules, nothing is exported to the namespace, so you will need to call every function
+**For both modules, nothing is exported to the namespace, so you will need to call every function
 with `KernelMatrices.foo()`, or `HODLR.foo()`, or `KernelMatrices.HODLR.foo()` if you do not bring
-the module `HODLR` into the namespace with `using KernelMatrices.HODLR`. </b>
+the module `HODLR` into the namespace with `using KernelMatrices.HODLR`.**
 
-<b> This code was written for Julia version `0.6.*`. </b>
+**This code was written for Julia version `0.6.*`.**
 
 
 # Changes to expect in the next release
 
-1. <b> Updating the software to be compatible with julia `1.0.0` and beyond. </b> I have not done
+1. **Updating the software to be compatible with julia `1.0.0` and beyond.** I have not done
    that now because I want to be careful to have an official release that is exactly the software I
    used for the corresponding submitted paper.
 
-2. <b> Change the behavior of the level option. </b> As of now, giving a level of `0` gives what I
+2. **Change the behavior of the level option.** As of now, giving a level of `0` gives what I
    consider to be the most sensible default behavior. But annoying, it means that giving a level of
    `k` really means your matrix will be of level `k-1` in the notation of the paper, so that a level
    of `1` will be an exact matrix. Again, I did not change this already because I only realized I had 
    written it in that awkward way after the official paper results had all been computed. But for 
    future releases, please expect different (and more reasonable) behavior for this arg.
 
-3. <b> Small performance improvements </b>. In general, the code tries to be both fast and
+3. **Small performance improvements**. In general, the code tries to be both fast and
    pedagogical. After this release, I am going to think more excluisvely about being fast.
 
 
