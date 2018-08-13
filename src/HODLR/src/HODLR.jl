@@ -2,7 +2,6 @@
 module HODLR
 
   using  StaticArrays
-  import IterativeSolvers, KernelMatrices, NearestNeighbors
   import KernelMatrices: KernelMatrix, submatrix, ACA, submatrix_nystrom, nlfisub
   import IterTools:      zip, chain, partition, drop, imap
 

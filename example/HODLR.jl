@@ -10,6 +10,18 @@ vrbs    = false    # Verbose flag:  Show timing?
 plel    = false    # Parallel flag: Do the operation in parallel?
 maxrank = 72       # max rank:      Fix the maximum rank of the off-diagonal blocks? If no, give 0.
 tol     = 1.0e-8   # tolerance:     If doing the ACA, terminate the partial factorization at this tol.
+lvl     = 0        # level:         The number of dydic splits of the matrix. 0 leads to the default
+                   #                value of log2(n) - 8. Due to how this is presently coded,
+                   #                though, if you were going to supply it by hand, you should give
+                   #                it log2(n) - 7.
+                   #                !!!
+                   #                IN GENERAL, IF YOU WANT TO SPECIFY A LEVEL K, PLEASE SUPPLY K+1
+                   #                TO THIS ARGUMENT.  
+                   #                !!!
+                   #                So, supplying the number 1 will give you an exact matrix,
+                   #                corresponding to a level 0. In a future release that isn't tied
+                   #                to a submitted paper, I will fix this behavior to be more
+                   #                intuitive.
 
 
 
@@ -21,15 +33,15 @@ tol     = 1.0e-8   # tolerance:     If doing the ACA, terminate the partial fact
 
 println()
 println("Not-precompiled assembly of HODLR matrix with ACA blocks, N=$N and ɛ=$tol is done in:")
-@time HK = HODLR.KernelHODLR(K, tol, 0,       0, nystrom=false, plel=plel) ;
+@time HK = HODLR.KernelHODLR(K, tol, 0,       lvl, nystrom=false, plel=plel) ;
 
 println()
 println("Not-precompiled assembly of HODLR matrix with fixed-rank ACA blocks, N=$N and p=$maxrank is done in:")
-@time HK = HODLR.KernelHODLR(K, tol, maxrank, 0, nystrom=false, plel=plel) ;
+@time HK = HODLR.KernelHODLR(K, tol, maxrank, lvl, nystrom=false, plel=plel) ;
 
 println()
 println("Not-precompiled assembly of HODLR matrix with Nystrom blocks, N=$N and p=$maxrank is done in:")
-@time HK = HODLR.KernelHODLR(K, tol, maxrank, 0, nystrom=true,  plel=plel) ;
+@time HK = HODLR.KernelHODLR(K, tol, maxrank, lvl, nystrom=true,  plel=plel) ;
 
 println()
 println("Not-precommpiled symmetric factorization of the last matrix is done in:")
