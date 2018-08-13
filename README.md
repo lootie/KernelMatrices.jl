@@ -4,14 +4,14 @@
 This software suite is a companion to [this paper](https://arxiv.org/abs/1808.03215). It is for
 working with kernel matrices where individual elements can be computed efficiently, so that one can
 write
-```
+```julia
 A[i,j] = F(x[i], y[j], v),
 ```
 Where `x` and `y` are any kind of structure that allows getindex-style access (like a vector) and
 `v` is a vector of parameters.  I have overloaded most (if not all) of the relevant Base operations
 for the KernelMatrix struct, so that once you create the lightweight KernelMatrix struct, call it
 `K`, with 
-```
+```julia
 julia> K = KernelMatrices.KernelMatrix(xpts, ypts, kernel_parameters, kernel_function)
 ```
 you can access the (i,j)-th element of that matrix with `K[i,j]`, the j-th column or row with
@@ -23,7 +23,7 @@ be used to achieve quasilinear complexity in matvecs, linear solves, and log-det
 
 For a brief whirlwind tour, here is a heavily commented example that builds these objects. In the
 `./examples/` directory, you will find similar files that you can run and mess with.
-```
+```julia
 using KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors
 
 # Choose the number of locations:
@@ -62,7 +62,7 @@ off-diagonal blocks: you can use the adaptive cross approximation (ACA) of Beben
 Rjasanow (2002), or you can use the Nystrom approximation of Williams and Seeger (2001). I will show
 you the syntax for both here, although they are very similar.
 
-```
+```julia
 # For the ACA, you need to choose:
   # A relative preocision for the off-diagonal block approximation (tol),
   # An optional fixed level (lvl),
@@ -106,7 +106,7 @@ complete and heavily commented scripts demonstrating how to do that.
 All of the code in this repository is defined in a module, which is most easily used the way you
 would use an official julia package. To faciliate that, I suggest adding the directory to your
 LOAD_PATH, which can most easily be done by adding
-```
+```julia
 push!(LOAD_PATH, "/path/to/the/src/directory/")
 ```
 to your `.juliarc.jl` file. Alternatively, you could symlink this repository to your `~/.julia`
@@ -119,7 +119,7 @@ the first alternative.
 
 You will need to install a few packages that are listed in the REQUIRE file, which can easily be done
 with 
-```
+```julia
 julia> Pkg.add.(["StaticArrays", "IterTools", "GeometricalPredicates", "NearestNeighbors"])
 ```
 None of those requirements are substantial or require any special care. If it all works, you will see
@@ -127,7 +127,7 @@ None of those requirements are substantial or require any special care. If it al
 
 Once you have done those things, you can access the two modules---`KernelMatrices` and
 `KernelMatrices.HODLR`---with
-```
+```julia
 julia> using KernelMatrices, KernelMatrices.HODLR
 ```
 <b> For both modules, nothing is exported to the namespace, so you will need to call every function
