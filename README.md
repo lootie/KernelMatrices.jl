@@ -150,8 +150,13 @@ the module `HODLR` into the namespace with `using KernelMatrices.HODLR`.**
    written it in that awkward way after the official paper results had all been computed. But for 
    future releases, please expect different (and more reasonable) behavior for this arg.
 
-3. **Small performance improvements**. In general, the code tries to be both fast and
+3. **Small performance improvements.** In general, the code tries to be both fast and
    pedagogical. After this release, I am going to think more excluisvely about being fast.
+
+4. **Small readability improvements.** Some of this code was written well over a year ago, and I
+   think I've gotten better at writing ergonomic and readable code. Again, in the interest of being
+   sure that I'm releasing code that corresponds exactly to the results shown in the paper, I have
+   not gone in and improved little guts in the code base. But in the next release, I will do that.
 
 
 # A note from the author
@@ -164,12 +169,12 @@ the source directory.
 
 If you would like to make contributions to the software, please feel free to reach out or submit
 pull requests! It is my sincere hope that this software is actually useful to people, so I am
-interested to hear about experiences messing with this software.
+interested to hear about your experience using with this software.
 
-Please feel free to contact me at `cgeoga@anl.gov` with any comments, questions, or concerns. I
-cannot promise that I will be in a position to help debug your code or implement the feature you
-want, but I plan on being as supportive as possible of people who want to use this software, so it
-is worth trying me.
+More generally, please feel free to contact me at `cgeoga@anl.gov` with any comments, questions, or
+concerns. I cannot promise that I will be in a position to help debug your code or implement the
+feature you want, but I plan on being as supportive as possible of people who want to use this
+software, so it is worth trying me.
 
 
 # Citation
