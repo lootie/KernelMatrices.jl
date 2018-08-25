@@ -34,12 +34,12 @@ n    = 1024
 # subtype of AbstractVector. I just use StaticArrays for a little performance boost.
 locs = map(x->SVector{2, Float64}(randn(2)), 1:n)
 
-# Declare a kernel function with this specific signature to enforce type stability. If you want to
-# use the HODLR matrix format, this function needs to be positive definite. It absolutely does NOT
-# need a nugget-like term on the diagonal to achieve this, but if the positive definite
-# kernelfunction is analytic everywhere, including at the origin, you may encounter some numerical
-# problems. To avoid writing something like the Matern covariance function here, I pick a simpler
-# positive definite function and simply add a nugget to be safe.
+# Declare a kernel function with this specific signature. If you want to use the HODLR matrix
+# format, this function needs to be positive definite. It absolutely does NOT need a nugget-like
+# term on the diagonal to achieve this, but if the positive definite kernelfunction is analytic
+# everywhere, including at the origin, you may encounter some numerical problems. To avoid writing
+# something like the Matern covariance function here, I pick a simpler positive definite function
+# and simply add a nugget to be safe.
 function kernelfunction{T<:Number}(x::Abstractvector, y::AbstractVector, p::AbstractVector{T})::T
   out = abs2(p[1])/abs2(1.0 + abs2(norm(x-y)/p[2]))
   if x == y
@@ -81,7 +81,8 @@ HK_a = HODLR.KernelHODLR(K, tol, lvl, rnk, nystrom=false, plel=pll)
   # and a parallel assembly option.
 HK_n = HODLR.KernelHODLR(K, tol, lvl, rnk, nystrom=true, plel=pll)
 
-# Congrats! You can now do HK_n*vec and HK_a*vec in quasilinear complexity. If you want to do the
+# Congrats! You can now do `HK_n*vec` and `HK_a*vec` in quasilinear complexity, assuming in the case
+# of `HK_a` that the rank of the off-diagonal blocks is O(log n) or less. If you want to do the
 # solves and logdets in that complexity as well, you'll need to commpute the symmetrix factorization.
 
 # Assuming that the output HODLR matrix is positive definite, you can factorize the matrix easily.

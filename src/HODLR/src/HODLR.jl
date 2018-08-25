@@ -1,7 +1,8 @@
 
 module HODLR
 
-  using  StaticArrays
+  using  StaticArrays, KernelMatrices
+  import NearestNeighbors
   import KernelMatrices: KernelMatrix, submatrix, ACA, submatrix_nystrom, nlfisub
   import IterTools:      zip, chain, partition, drop, imap
 
