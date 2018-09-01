@@ -3,6 +3,19 @@
 # assemble matrices or perform any matvecs.
 mutable struct ZeroFunction <: Function end
 
+# An abstract type for the level of the HODLR matrix:
+abstract type HierLevel end
+
+# A fixed level, so that the algorith will grow with naive complexity:
+mutable struct FixedLevel <: HierLevel
+  lv :: Int64
+end
+
+# A level that grows with O(logn), so that the level is floor(log2(n)) - lv
+mutable struct LogLevel <: HierLevel
+  lv :: Int64
+end
+
 # A struct to efficiently store low rank matrices of the form (I + M*X*M')(I + M*X*M')'.
 mutable struct LowRankW{T<:Number} <: LinearAlgebra.Factorization{T}
   M              ::Matrix{T}
@@ -26,7 +39,7 @@ mutable struct KernelHODLR{T<:Number}
   nonleafindices :: Vector{Vector{SVector{4, Int64}}}
   U              :: Union{Vector{Vector{Matrix{T}}}, Nothing}  # off-diagonal U 
   V              :: Union{Vector{Vector{Matrix{T}}}, Nothing}  # off-diagonal V
-  L              :: Vector{Symmetric{T, Matrix{T}}}         # leaves
+  L              :: Vector{Symmetric{T, Matrix{T}}}            # leaves
   W              :: Union{FactorHODLR{T}, Nothing}             # The symmetric factor, if computed.
   nys            :: Bool
 end
