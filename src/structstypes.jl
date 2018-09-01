@@ -1,31 +1,22 @@
 
-type IncompleteCholesky{T}
+mutable struct IncompleteCholesky{T<:Number} 
   L::Matrix{T}
 end
 
-type KernelMatrix{T}
-  x1       ::AbstractVector
-  x2       ::AbstractVector
+mutable struct KernelMatrix{T<:Number, A<:AbstractVector} 
+  x1       ::A
+  x2       ::A
   parms    ::AbstractVector{T}
   kernel   ::Function
 end
 
-type NystromKernel{T}  <: Function
+mutable struct NystromKernel{T<:Number}  <: Function 
   Kernel::Function
   parms::Vector{T}
   lndmk::AbstractVector
   tmp1 ::Vector{T}
   tmp2 ::Vector{T}
-  F::Union{Base.LinAlg.Cholesky{T, Matrix{T}}, Base.LinAlg.BunchKaufman{T, Matrix{T}}}
-end
-
-function KernelMatrix{T<:Number}(pts1::AbstractVector, pts2::AbstractVector,
-                                 parms::AbstractVector{T}, kern::Function)::KernelMatrix{T}
-  if typeof(pts1[1]) != typeof(pts2[1])
-    error("Your point vectors are not of the same type")
-  end
-  typ = typeof(kern(pts1[1], pts2[1], parms))
-  return KernelMatrix{typ}(pts1, pts2, parms, kern)
+  F::Union{Cholesky{T, Matrix{T}}, BunchKaufman{T, Matrix{T}}}
 end
 
 function NystromKernel(T::Type, kern::Function, landmark::AbstractVector, 
@@ -42,7 +33,7 @@ function NystromKernel(T::Type, kern::Function, landmark::AbstractVector,
   return NystromKernel{T}(kern, parms, landmark, tmp1, tmp2, F)
 end
 
-function (NK::NystromKernel{T}){T<:Number}(x::AbstractVector, y::AbstractVector, pr::Vector{T})
+function (NK::NystromKernel{T})(x::A, y::A, pr::Vector{T}) where{T<:Number, A<:AbstractVector} 
   pr == NK.parms || error("Parms don't match: need to re-generate nystrom matrix.")
   @inbounds for j in eachindex(NK.tmp1)
     NK.tmp1[j] = NK.Kernel(x, NK.lndmk[j], NK.parms)

@@ -1,19 +1,18 @@
 
 # The solve term for the Hessian, corresponding to equation 27:
-function HODLR_hess_slv{T<:Number}(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, DKk::DerivativeHODLR{T},
-                                   D2B2::Vector{Vector{SecondDerivativeBlock{T}}},
-                                   D2BL::Vector{Symmetric{T, Matrix{T}}}, 
-                                   Sjk::Symmetric{T, Matrix{T}}, data::Vector{T}, HK_s_data::Vector{T})
+function HODLR_hess_slv(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, DKk::DerivativeHODLR{T},
+                        D2B2::Vector{Vector{SecondDerivativeBlock{T}}}, D2BL::Vector{Symmetric{T,Matrix{T}}},
+                        Sjk::Symmetric{T, Matrix{T}}, data::Vector{T}, HK_s_data::Vector{T}) where{T<:Number}
   out  = -(HK\(DKk*(HK\(DKj*HK_s_data))))
   out -=  HK\(DKj*(HK\(DKk*HK_s_data)))
   out +=  HK\Deriv2mul(DKj, DKk, D2B2, D2BL, Sjk, HK_s_data)
   return dot(data, out)
 end
 
-function HODLR_p_hess_slv{T<:Number}(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, DKk::DerivativeHODLR{T},
-                             D2B2::Vector{Vector{SecondDerivativeBlock{T}}},
-                             D2BL::Vector{Symmetric{T, Matrix{T}}}, 
-                             Sjk::Symmetric{T, Matrix{T}}, data::Vector{T}, HK_s_data::Vector{T}, dotm::T)
+function HODLR_p_hess_slv(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, DKk::DerivativeHODLR{T},
+                          D2B2::Vector{Vector{SecondDerivativeBlock{T}}}, D2BL::Vector{Symmetric{T,Matrix{T}}},
+                          Sjk::Symmetric{T, Matrix{T}}, data::Vector{T}, HK_s_data::Vector{T},
+                          dotm::T) where{T<:Number}
   tmp1 = DKj*HK_s_data
   tmp2 = DKk*HK_s_data
   out  = -(HK\(DKk*(HK\tmp1)))
@@ -26,10 +25,10 @@ function HODLR_p_hess_slv{T<:Number}(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}
   return length(data)*ret
 end
 
-function HODLR_hess_extra{T<:Number}(K::KernelMatrix{T}, HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, 
-                                     DKk::DerivativeHODLR{T}, dfunjk::Function, data::Vector{T}, 
-                                     HK_s_data::Vector{T}, vecs::Vector{Vector{T}};
-                                     profile::Bool=false, plel::Bool=false)
+function HODLR_hess_extra(K::KernelMatrix{T}, HK::KernelHODLR{T}, DKj::DerivativeHODLR{T},
+                          DKk::DerivativeHODLR{T}, dfunjk::Function, data::Vector{T},
+                          HK_s_data::Vector{T}, vecs::Vector{Vector{T}}; profile::Bool=false,
+                          plel::Bool=false) where{T<:Number}
   D2Blocks = SecondDerivativeBlocks(K, dfunjk, HK.nonleafindices, HK.mrnk, plel)
   D2Leaves = SecondDerivativeLeaves(K, dfunjk, HK.leafindices, plel)
   lndmk    = K.x1[Int64.(round.(linspace(1, size(K)[1], HK.mrnk)))]
@@ -42,14 +41,14 @@ function HODLR_hess_extra{T<:Number}(K::KernelMatrix{T}, HK::KernelHODLR{T}, DKj
 end
 
 # A special faster version for when the second derivative is zero:
-function HODLR_hess_slv_no2d{T<:Number}(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, 
-                                        DKk::DerivativeHODLR{T}, data::Vector{T}, HK_s_data::Vector{T})
+function HODLR_hess_slv_no2d(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, DKk::DerivativeHODLR{T},
+                             data::Vector{T}, HK_s_data::Vector{T}) where{T<:Number}
   out  = -(HK\(DKk*(HK\(DKj*HK_s_data))))
   out -=  HK\(DKj*(HK\(DKk*HK_s_data)))
   return dot(data, out)
 end
 
-function HODLR_hess_tr1_sym_diag{T<:Number}(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, vec::Vector{T})
+function HODLR_hess_tr1_sym_diag(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, vec::Vector{T}) where{T<:Number}
   tp1 = Array{T}(length(vec))
   tp2 = Array{T}(length(vec))
   At_ldiv_B!(tp1, HK.W, vec)
@@ -57,8 +56,8 @@ function HODLR_hess_tr1_sym_diag{T<:Number}(HK::KernelHODLR{T}, DKj::DerivativeH
   return dot(tp2, tp2)
 end
 
-function HODLR_hess_tr1_sym_offdiag{T<:Number}(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, 
-                                               DKk::DerivativeHODLR{T}, vec::Vector{T})
+function HODLR_hess_tr1_sym_offdiag(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, 
+                                    DKk::DerivativeHODLR{T}, vec::Vector{T}) where{T<:Number}
   tp1 = Array{T}(length(vec))
   tp2 = Array{T}(length(vec))
   At_ldiv_B!(tp1, HK.W, vec)
@@ -66,18 +65,16 @@ function HODLR_hess_tr1_sym_offdiag{T<:Number}(HK::KernelHODLR{T}, DKj::Derivati
   return dot(tp2, tp2)
 end
 
-function HODLR_hess_tr2{T<:Number}(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T},
-                                   DKk::DerivativeHODLR{T}, 
-                                   D2B2::Vector{Vector{SecondDerivativeBlock{T}}},
-                                   D2BL::Vector{Symmetric{T, Matrix{T}}}, 
-                                   Sjk::Symmetric{T, Matrix{T}}, vec::Vector{T})
+function HODLR_hess_tr2(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, DKk::DerivativeHODLR{T},
+                        D2B2::Vector{Vector{SecondDerivativeBlock{T}}}, D2BL::Vector{Symmetric{T,Matrix{T}}},
+                        Sjk::Symmetric{T, Matrix{T}}, vec::Vector{T}) where{T<:Number}
   tp1 = Array{T}(length(vec))
   At_ldiv_B!(tp1, HK.W, vec)
   return dot(tp1, Deriv2mul(DKj, DKk, D2B2, D2BL, Sjk, tp1))
 end
 
-function stoch_fisher{T<:Number}(K::KernelMatrix{T}, HK::KernelHODLR{T}, DKs::Vector{DerivativeHODLR{T}},
-                                  vecs::Vector{Vector{T}}; plel::Bool=false, shuffle::Bool=false)
+function stoch_fisher(K::KernelMatrix{T}, HK::KernelHODLR{T}, DKs::Vector{DerivativeHODLR{T}},
+                      vecs::Vector{Vector{T}}; plel::Bool=false, shuffle::Bool=false) where{T<:Number}
   # Some tests to make sure the call is legit:
   HK.U        == nothing         || error("The matrix needs to be factorized.")
   length(DKs) == length(K.parms) || error("You didn't supply the right number of gradient funs.")
@@ -101,10 +98,10 @@ function stoch_fisher{T<:Number}(K::KernelMatrix{T}, HK::KernelHODLR{T}, DKs::Ve
   return Symmetric(Out)
 end
 
-function stoch_hessian{T<:Number}(K::KernelMatrix{T}, HK::KernelHODLR{T}, dat::Vector{T},
-                                   d1funs::Vector{Function}, d2funs::Vector{Vector{Function}},
-                                   vecs::Vector{Vector{T}}; plel::Bool=false, verbose::Bool=false,
-                                   shuffle::Bool=false, profile::Bool=false)
+function stoch_hessian(K::KernelMatrix{T}, HK::KernelHODLR{T}, dat::Vector{T},
+                      d1funs::Vector{Function}, d2funs::Vector{Vector{Function}},
+                      vecs::Vector{Vector{T}}; plel::Bool=false, verbose::Bool=false,
+                      shuffle::Bool=false, profile::Bool=false) where{T<:Number}
   # Some tests to make sure the call is legit:
   d2lentest = Int64(length(d1funs)*(length(d1funs)+1)/2)
   HK.U           == nothing         || error("The matrix needs to be factorized.")

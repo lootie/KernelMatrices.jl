@@ -1,5 +1,5 @@
 
-function negloglik{T<:Number}(HK::Union{Matrix{T}, KernelHODLR{T}}, dat::Vector{T})
+function negloglik(HK::Union{Matrix{T}, KernelHODLR{T}}, dat::Vector{T}) where{T<:Number}
   typeof(HK) == KernelHODLR{T} || warn("This may take a while on a full matrix...")
   if typeof(HK) == KernelHODLR{T} && HK.U != nothing
     error("The HODLR matrix needs to be factorized for this.")
@@ -8,7 +8,7 @@ function negloglik{T<:Number}(HK::Union{Matrix{T}, KernelHODLR{T}}, dat::Vector{
   return nll
 end
 
-function profile_negloglik{T<:Number}(HK::Union{Matrix{T}, KernelHODLR{T}}, dat::Vector{T})
+function profile_negloglik(HK::Union{Matrix{T}, KernelHODLR{T}}, dat::Vector{T}) where{T<:Number}
   typeof(HK) == KernelHODLR{T} || warn("This may take a while on a full matrix...")
   if typeof(HK) == KernelHODLR{T} && HK.U != nothing
     error("The HODLR matrix needs to be factorized for this.")

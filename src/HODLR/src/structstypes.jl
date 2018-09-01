@@ -1,38 +1,38 @@
 
 # A null type for the zero function, so I can specialize for cases when I don't actually need to
 # assemble matrices or perform any matvecs.
-type ZeroFunction <: Function end
+mutable struct ZeroFunction <: Function end
 
 # A struct to efficiently store low rank matrices of the form (I + M*X*M')(I + M*X*M')'.
-type LowRankW{T} 
+mutable struct LowRankW{T<:Number} 
   M              ::Matrix{T}
   X              ::Matrix{T}
 end
 
 # A struct for the symmetric factor of a HODLR matrix.
-type FactorHODLR{T} 
+mutable struct FactorHODLR{T<:Number} 
   leafW          :: Vector{Matrix{T}}
-  leafWf         :: Vector{Base.LinAlg.LU{T, Matrix{T}}}
-  leafWtf        :: Vector{Base.LinAlg.LU{T, Matrix{T}}}
+  leafWf         :: Vector{LU{T, Matrix{T}}}
+  leafWtf        :: Vector{LU{T, Matrix{T}}}
   nonleafW       :: Vector{Vector{LowRankW{T}}}
 end
 
 # A HODLR matrix.
-type KernelHODLR{T}
+mutable struct KernelHODLR{T<:Number}
   ep             :: Float64
   lvl            :: Int64
   mrnk           :: Int64
   leafindices    :: Vector{SVector{4, Int64}}
   nonleafindices :: Vector{Vector{SVector{4, Int64}}}
-  U              :: Union{Vector{Vector{Matrix{T}}}, Void}  # off-diagonal U 
-  V              :: Union{Vector{Vector{Matrix{T}}}, Void}  # off-diagonal V
+  U              :: Union{Vector{Vector{Matrix{T}}}, Nothing}  # off-diagonal U 
+  V              :: Union{Vector{Vector{Matrix{T}}}, Nothing}  # off-diagonal V
   L              :: Vector{Symmetric{T, Matrix{T}}}         # leaves
-  W              :: Union{FactorHODLR{T}, Void}             # The symmetric factor, if computed.
+  W              :: Union{FactorHODLR{T}, Nothing}             # The symmetric factor, if computed.
   nys            :: Bool
 end
 
 # A block of the derivative of a HODLR matrix. It corresponds to an element of KernelHODLR.U or V.
-type DerivativeBlock{T}
+mutable struct DerivativeBlock{T<:Number}
   K1p            :: Matrix{T}
   K1pd           :: Matrix{T}
   Kp2            :: Matrix{T}
@@ -41,26 +41,26 @@ end
 
 # Similar for the second derivative, although this isn't actually everything. This is just all we
 # need for the off-diagonal block beyond what a DerivativeBlock already provides.
-type SecondDerivativeBlock{T}
+mutable struct SecondDerivativeBlock{T<:Number}
   K1pjk          :: Matrix{T}
   Kp2jk          :: Matrix{T}
 end
 
 # The derivative of a HODLR matrix.
-type DerivativeHODLR{T}
+mutable struct DerivativeHODLR{T<:Number}
   ep             :: Float64
   lvl            :: Int64
   leafindices    :: Vector{SVector{4, Int64}}
   nonleafindices :: Vector{Vector{SVector{4, Int64}}}
   L              :: Vector{Symmetric{T, Matrix{T}}}         # leaves
   B              :: Vector{Vector{DerivativeBlock{T}}}
-  S              :: Base.LinAlg.Cholesky{T, Matrix{T}}
+  S              :: Cholesky{T, Matrix{T}}
   Sj             :: Symmetric{T, Matrix{T}}
 end
 
 # A utility struct with all the necessary options for maximum likelihood to keep function calls
 # somewhat succint.
-type Maxlikopts
+mutable struct Maxlikopts
   kernfun  :: Function         # The kernel function
   dfuns    :: Vector{Function} # The vector of derivative functions
   epK      :: Float64          # The pointwise precision for the off-diagonal blocks. Not used for Nystrom method.

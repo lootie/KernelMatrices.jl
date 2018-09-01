@@ -2,8 +2,8 @@
 # This is the adaptive cross-approximation (ACA), I think originally proposed by Bebendorf.
 # This implementation is an attempt to be as clean and readable as possible, but has admittedly
 # grown up a little bit. I probably should split some of these things into helper functions.
-function ACA{T<:Number}(M::Union{Matrix{T}, KernelMatrix{T}}, 
-                        rtol::Float64, maxrank::Int64=0)::NTuple{2, Matrix{T}}
+function ACA(M::Union{Matrix{T}, KernelMatrix{T}}, 
+             rtol::Float64, maxrank::Int64=0)::NTuple{2, Matrix{T}} where{T<:Number}
 
   # Create the maximum size cutoff:
   maxsz     = (maxrank == 0 ? minimum(size(M)) : min(maxrank, minimum(size(M))))
@@ -22,8 +22,8 @@ function ACA{T<:Number}(M::Union{Matrix{T}, KernelMatrix{T}},
     tmprow  = M[strt,:]
   end
   strt     == maxsz && error("Incompatible maxrank or matrix dimensions.")
-  ucol      = Base.IntSet()
-  urow      = Base.IntSet(strt)
+  ucol      = Base.BitSet()
+  urow      = Base.BitSet(strt)
 
   # Get the first column in place:
   mv, mi    = restrictedmaxabs(tmprow, ucol)
@@ -92,7 +92,7 @@ function ACA{T<:Number}(M::Union{Matrix{T}, KernelMatrix{T}},
 
 end
 
-function nystrom_uvt{T<:Number}(K::KernelMatrix{T}, N::NystromKernel{T})::Tuple{Matrix{T},Matrix{T}}
+function nystrom_uvt(K::KernelMatrix{T}, N::NystromKernel{T})::Tuple{Matrix{T},Matrix{T}} where{T<:Number}
   typeof(K.x1[1]) == typeof(N.lndmk[1]) || error("Nystrom landmarks don't agree with K points.")
   K1  = KernelMatrix(K.x1, N.lndmk, K.parms, K.kernel)
   K2  = KernelMatrix(N.lndmk, K.x2, K.parms, K.kernel)
@@ -104,7 +104,7 @@ end
 # This is a very simple (and fast!) conversion from an ACA to a partial QR factorization,
 # as described in Halko 2011 p238. This is NOT a randomized factorization, and what comes
 # out will be numerically equivalent to U*V'.
-function QR_ACA{T<:Number}(U::Matrix{T}, V::Matrix{T})::Tuple{Matrix{T}, Matrix{T}}
+function QR_ACA(U::Matrix{T}, V::Matrix{T})::Tuple{Matrix{T}, Matrix{T}} where{T<:Number}
   UQ,UR = qr(U)
   D     = A_mul_Bt(UR, V)
   DQ,DR = qr(D)
@@ -112,12 +112,11 @@ function QR_ACA{T<:Number}(U::Matrix{T}, V::Matrix{T})::Tuple{Matrix{T}, Matrix{
   return Q, DR 
 end
 
-function SVD_ACA{T<:Number}(U::Matrix{T}, V::Matrix{T})::Tuple{Matrix{T}, Vector{T}, Matrix{T}}
+function SVD_ACA(U::Matrix{T}, V::Matrix{T})::Tuple{Matrix{T}, Vector{T}, Matrix{T}} where{T<:Number}
   UQ,UR    = qr(U)
   D        = A_mul_Bt(UR, V)
   DU,DS,DV = svd(D)
   Uo       = UQ*DU
   return Uo, DS, DV
 end
-
 

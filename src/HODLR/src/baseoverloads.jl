@@ -1,28 +1,28 @@
 
-function Base.size{T<:Number}(K::KernelHODLR{T})::Tuple{Int64, Int64}
+function Base.size(K::KernelHODLR{T})::Tuple{Int64, Int64} where{T<:Number}
   sz = sum(map(x->size(x,1), K.L))
   return sz, sz
 end
 
-function Base.size{T<:Number}(K::KernelHODLR{T}, idx::Int64)::Int64
+function Base.size(K::KernelHODLR{T}, idx::Int64)::Int64 where{T<:Number}
   abs(idx) <= 2 || error("2D array-like thing.")
   sz = sum(map(x->size(x,1), K.L))
   return sz
 end
 
-function Base.size{T<:Number}(W::LowRankW{T})::Tuple{Int64, Int64}
+function Base.size(W::LowRankW{T})::Tuple{Int64, Int64} where{T<:Number}
   return size(W.M,1), size(W.M,1)
 end
 
-function Base.full{T<:Number}(M::LowRankW{T})::Matrix{T}
+function full(M::LowRankW{T})::Matrix{T} where{T<:Number}
   return I + A_mul_Bt(M.M*M.X, M.M)
 end
 
-function Base.det{T<:Number}(W::LowRankW{T})::Float64
+function LinearAlgebra.det(W::LowRankW{T})::Float64 where{T<:Number}
   return det(I + At_mul_B(W.M, W.M)*W.X)
 end
 
-function Base.full{T<:Number}(K::KernelHODLR{T})::Matrix{T}
+function full(K::KernelHODLR{T})::Matrix{T} where{T<:Number}
   Out = Array{T}(size(K))
   for (j,pt) in enumerate(K.leafindices)
     Out[pt[1]:pt[2], pt[3]:pt[4]] = K.L[j]
@@ -38,7 +38,7 @@ function Base.full{T<:Number}(K::KernelHODLR{T})::Matrix{T}
 end
 
 # VERY computationally inefficient. This really is only for testing.
-function Base.full{T<:Number}(W::FactorHODLR{T})::Matrix{T}
+function full(W::FactorHODLR{T})::Matrix{T} where{T<:Number}
   Out = cat([1,2], W.leafW...)
   # Multiply the nonleaves:
   for j in 1:length(W.nonleafW)
@@ -47,7 +47,7 @@ function Base.full{T<:Number}(W::FactorHODLR{T})::Matrix{T}
   return Out
 end
 
-function Base.A_mul_B!{T<:Number}(target::StridedArray, W::LowRankW{T}, src::StridedArray)
+function LinearAlgebra.A_mul_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
@@ -58,7 +58,7 @@ function Base.A_mul_B!{T<:Number}(target::StridedArray, W::LowRankW{T}, src::Str
   return target
 end
 
-function Base.At_mul_B!{T<:Number}(target::StridedArray, W::LowRankW{T}, src::StridedArray)
+function LinearAlgebra.At_mul_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
@@ -69,7 +69,7 @@ function Base.At_mul_B!{T<:Number}(target::StridedArray, W::LowRankW{T}, src::St
   return target
 end
 
-function Base.A_ldiv_B!{T<:Number}(target::StridedArray, W::LowRankW{T}, src::StridedArray)
+function LinearAlgebra.A_ldiv_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
@@ -79,7 +79,8 @@ function Base.A_ldiv_B!{T<:Number}(target::StridedArray, W::LowRankW{T}, src::St
   end
   return target
 end
-function Base.At_ldiv_B!{T<:Number}(target::StridedArray, W::LowRankW{T}, src::StridedArray)
+
+function LinearAlgebra.At_ldiv_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
@@ -90,7 +91,7 @@ function Base.At_ldiv_B!{T<:Number}(target::StridedArray, W::LowRankW{T}, src::S
   return target
 end
 
-function Base.A_mul_B!{T<:Number}(target::StridedVector, W::FactorHODLR{T}, src::StridedVector)
+function LinearAlgebra.A_mul_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the nonleafW vectors in the correct order:
@@ -104,7 +105,7 @@ function Base.A_mul_B!{T<:Number}(target::StridedVector, W::FactorHODLR{T}, src:
   return target
 end
 
-function Base.At_mul_B!{T<:Number}(target::StridedVector, W::FactorHODLR{T}, src::StridedVector)
+function LinearAlgebra.At_mul_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the leaf vectors:
@@ -118,7 +119,7 @@ function Base.At_mul_B!{T<:Number}(target::StridedVector, W::FactorHODLR{T}, src
   return target
 end
 
-function Base.A_ldiv_B!{T<:Number}(target::StridedVector, W::FactorHODLR{T}, src::StridedVector)
+function LinearAlgebra.A_ldiv_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the leaf vectors:
@@ -132,7 +133,7 @@ function Base.A_ldiv_B!{T<:Number}(target::StridedVector, W::FactorHODLR{T}, src
   return target
 end
 
-function Base.At_ldiv_B!{T<:Number}(target::StridedVector, W::FactorHODLR{T}, src::StridedVector)
+function LinearAlgebra.At_ldiv_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the nonleafW vectors in the correct order:
@@ -146,7 +147,7 @@ function Base.At_ldiv_B!{T<:Number}(target::StridedVector, W::FactorHODLR{T}, sr
   return target
 end
 
-function Base.A_mul_B!{T<:Number}(target::StridedVector, K::KernelHODLR{T}, src::StridedVector)
+function LinearAlgebra.A_mul_B!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
   if K.W == nothing
     # Zero out the target vector:
     fill!(target, zero(eltype(target)))
@@ -174,11 +175,11 @@ function Base.A_mul_B!{T<:Number}(target::StridedVector, K::KernelHODLR{T}, src:
   return target
 end
 
-function Base.At_mul_B!{T<:Number}(target::StridedVector, K::KernelHODLR{T}, src::StridedVector)
+function LinearAlgebra.At_mul_B!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
   return A_mul_B!(target, K, src)
 end
 
-function Base.A_ldiv_B!{T<:Number}(target::StridedVector, K::KernelHODLR{T}, src::StridedVector)
+function LinearAlgebra.A_ldiv_B!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
   if K.W == nothing
     error("No solves without factorization.")
   else
@@ -190,11 +191,11 @@ function Base.A_ldiv_B!{T<:Number}(target::StridedVector, K::KernelHODLR{T}, src
   return target
 end
 
-function Base.At_ldiv_B!{T<:Number}(target::StridedVector, K::KernelHODLR{T}, src::StridedVector)
+function LinearAlgebra.At_ldiv_B!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
   return A_ldiv_B!(target, K, src)
 end
 
-function Base.logdet{T<:Number}(K::KernelHODLR{T})::Float64
+function LinearAlgebra.logdet(K::KernelHODLR{T})::Float64 where{T<:Number}
   if K.W == nothing
     error("No logdet without factorization.")
   else
@@ -211,12 +212,12 @@ function Base.logdet{T<:Number}(K::KernelHODLR{T})::Float64
   end
 end
 
-function Base.size{T<:Number}(DK::DerivativeHODLR{T})::Tuple{Int64, Int64}
+function Base.size(DK::DerivativeHODLR{T})::Tuple{Int64, Int64} where{T<:Number}
   sz = sum(map(x->size(x,1), DK.L))
   return sz, sz
 end
 
-function Base.full{T<:Number}(DK::DerivativeHODLR{T})::Matrix{T}
+function full(DK::DerivativeHODLR{T})::Matrix{T} where{T<:Number}
   Out = zeros(T, size(DK))
   for (j,pt) in enumerate(DK.leafindices)
     Out[pt[1]:pt[2], pt[3]:pt[4]] = DK.L[j]
@@ -231,7 +232,7 @@ function Base.full{T<:Number}(DK::DerivativeHODLR{T})::Matrix{T}
   return Out
 end
 
-function Base.A_mul_B!{T<:Number}(target::StridedVector, DK::DerivativeHODLR{T}, src::StridedVector)
+function LinearAlgebra.A_mul_B!(target::StridedVector, DK::DerivativeHODLR{T}, src::StridedVector) where{T<:Number}
   # Zero out the target vector:
   fill!(target, zero(eltype(target)))
   # Apply the leaves:
@@ -256,49 +257,49 @@ end
 #
 ##
 
-function Base.:*{T<:Number}(K::KernelHODLR{T}, source::Vector{T})::Vector{T}
+function LinearAlgebra.:*(K::KernelHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(length(source))
   A_mul_B!(target, K, source)
   return target
 end
 
-function Base.:*{T<:Number}(W::FactorHODLR{T}, source::Vector{T})::Vector{T}
+function LinearAlgebra.:*(W::FactorHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(length(source))
   A_mul_B!(target, W, source)
   return target
 end
 
-function Base.:\{T<:Number}(K::KernelHODLR{T}, source::Vector{T})::Vector{T}
+function LinearAlgebra.:\(K::KernelHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(length(source))
   A_ldiv_B!(target, K, source)
   return target
 end
 
-function Base.:*{T<:Number}(W::LowRankW{T}, src::Vector{T})::Vector{T}
+function LinearAlgebra.:*(W::LowRankW{T}, src::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(length(source))
   A_mul_B!(target, W, src)
   return target
 end
 
-function Base.:*{T<:Number}(W::LowRankW{T}, src::Matrix{T})::Matrix{T}
+function LinearAlgebra.:*(W::LowRankW{T}, src::Matrix{T})::Matrix{T} where{T<:Number}
   target = Array{T}(size(src))
   A_mul_B!(target, W, src)
   return target
 end
 
-function Base.:*{T<:Number}(DK::DerivativeHODLR{T}, src::Vector{T})::Vector{T}
+function LinearAlgebra.:*(DK::DerivativeHODLR{T}, src::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(size(src))
   A_mul_B!(target, DK, src)
   return target
 end
 
-function Base.:\{T<:Number}(W::LowRankW{T}, src::Vector{T})::Vector{T}
+function LinearAlgebra.:\(W::LowRankW{T}, src::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(length(source))
   A_ldiv_B!(target, W, src)
   return target
 end
 
-function Base.:\{T<:Number}(W::LowRankW{T}, src::Matrix{T})::Matrix{T}
+function LinearAlgebra.:\(W::LowRankW{T}, src::Matrix{T})::Matrix{T} where{T<:Number}
   target = Array{T}(size(src))
   A_ldiv_B!(target, W, src)
   return target

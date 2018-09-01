@@ -2,8 +2,8 @@
 # The constructor for the HODLR matrix given a KernelMatrix struct. If you nystrom=false, the blocks
 # are assembled with the ACA up to tolerance ep or rank maxrank (if maxrank>0, otherwise no limit on
 # the permitted rank). If nystrom=true, assembles blocks using the Nystrom approximation.
-function KernelHODLR{T<:Number}(K::KernelMatrix{T}, ep::Float64=1.0e-10, maxrank::Int64=0,
-                                level::Int64=0; nystrom::Bool=false, plel::Bool=false)::KernelHODLR{T}
+function KernelHODLR(K::KernelMatrix{T}, ep::Float64=1.0e-10, maxrank::Int64=0, level::Int64=0;
+                     nystrom::Bool=false, plel::Bool=false)::KernelHODLR{T} where{T<:Number}
 
   # Get the level, leaf indices, and non-leaf indices:
   level, leafinds, nonleafinds = HODLRindices(size(K)[1], level)
@@ -44,7 +44,8 @@ end
 # The constructor for the EXACT derivative of a HODLR matrix. It doesn't actually require the blocks
 # of the HODLR matrix, but passing it the HODLR matrix is convenient to access the information about 
 # block boundaries and stuff.
-function DerivativeHODLR{T<:Number}(K::KernelMatrix{T}, dfun::Function, HK::KernelHODLR{T}; plel::Bool=false)
+function DerivativeHODLR(K::KernelMatrix{T}, dfun::Function, HK::KernelHODLR{T}; 
+                         plel::Bool=false) where{T<:Number}
   # Check that the call is valid:
   HK.nys || error("This is only valid for Nystrom-block matrices.")
   nwrk   = nworkers()
@@ -72,8 +73,8 @@ end
 
 
 # Construct the leaves of the EXACT second derivative of a HODLR matrix.
-function SecondDerivativeLeaves{T<:Number}(K::KernelMatrix{T}, djk::Function,
-                                           lfi::AbstractVector, plel::Bool=false)
+function SecondDerivativeLeaves(K::KernelMatrix{T}, djk::Function, lfi::AbstractVector, 
+                                plel::Bool=false) where{T<:Number}
   d2K    = KernelMatrices.KernelMatrix(K.x1, K.x2, K.parms, djk)
   return mapf(x->Symmetric(d2K[x[1]:x[2], x[3]:x[4]]), lfi, nworkers(), plel)
 end
@@ -81,8 +82,8 @@ end
 
 
 # Construct the off-diagonal blocks of the EXACT second derivative of a HODLR matrix.
-function SecondDerivativeBlocks{T<:Number}(K::KernelMatrix{T}, djk::Function, nlfi::AbstractVector,
-                                           mrnk::Int64, plel::Bool=false)
+function SecondDerivativeBlocks(K::KernelMatrix{T}, djk::Function, nlfi::AbstractVector,
+                                mrnk::Int64, plel::Bool=false) where{T<:Number}
   d2K    = KernelMatrices.KernelMatrix(K.x1, K.x2, K.parms, djk)
   lndmk  = K.x1[Int64.(round.(linspace(1, size(K)[1], mrnk)))]
   B      = map(nlf -> mapf(x->SBlock(nlfisub(d2K, x), djk, lndmk), nlf, nworkers(), plel), nlfi)

@@ -2,7 +2,7 @@
 # This is the big kahuna function right here. I have liberally commented it and written some helper
 # functions with long specific names in the hopes that this is human-readable. Some of the helper
 # functions are uglier and less easy to read, but it is my hope that this chunk of code is intelligible.
-function symmetricfactorize!{T<:Number}(K::KernelHODLR{T}; plel::Bool=false, verbose::Bool=false)
+function symmetricfactorize!(K::KernelHODLR{T}; plel::Bool=false, verbose::Bool=false) where{T<:Number}
 
   # Get the numbers of workers once:
   nwrk  = nworkers()

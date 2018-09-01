@@ -1,5 +1,5 @@
 
-function restrictedmaxabs{T<:Number}(x::Vector{T}, noinds::IntSet)::Tuple{T, Int64}
+function restrictedmaxabs(x::Vector{T}, noinds::BitSet)::Tuple{T, Int64} where{T<:Number}
   ind = 1
   while in(ind, noinds) && ind < length(x)
     ind += 1
@@ -14,7 +14,7 @@ function restrictedmaxabs{T<:Number}(x::Vector{T}, noinds::IntSet)::Tuple{T, Int
   return val, ind
 end
 
-function fillcol!{T<:Number}(target::Vector{T}, M::KernelMatrix{T}, idx::Int64)::Void
+function fillcol!(target::Vector{T}, M::KernelMatrix{T}, idx::Int64)::Nothing where{T<:Number}
   length(target) == size(M)[1] || error("The lengths here don't agree")
   @simd for j in eachindex(target)
      @inbounds target[j] = M[j, idx]
@@ -22,7 +22,7 @@ function fillcol!{T<:Number}(target::Vector{T}, M::KernelMatrix{T}, idx::Int64):
   nothing
 end
 
-function fillrow!{T<:Number}(target::Vector{T}, M::KernelMatrix{T}, idx::Int64)::Void
+function fillrow!(target::Vector{T}, M::KernelMatrix{T}, idx::Int64)::Nothing where{T<:Number}
   length(target) == size(M)[2] || error("The lengths here don't agree")
   @simd for j in eachindex(target)
      @inbounds target[j] = M[idx, j]
@@ -30,7 +30,7 @@ function fillrow!{T<:Number}(target::Vector{T}, M::KernelMatrix{T}, idx::Int64):
   nothing
 end
 
-function getsortperm{T}(x::Vector{T}, xsorted::Vector{T})::Vector{Int64}
+function getsortperm(x::Vector{T}, xsorted::Vector{T})::Vector{Int64} where{T}
   sortperm = zeros(Int64, length(x))
   for j in eachindex(x)
     start = 1
@@ -75,17 +75,17 @@ function hilbertsort(v::Vector)::Vector
   end
 end
 
-function submatrix{T<:Number}(K::KernelMatrix{T}, startj::Int64, stopj::Int64, 
-                              startk::Int64, stopk::Int64)::KernelMatrix{T}
+function submatrix(K::KernelMatrix{T}, startj::Int64, stopj::Int64, 
+                   startk::Int64, stopk::Int64)::KernelMatrix{T} where{T<:Number}
   return KernelMatrix{T}(view(K.x1, startj:stopj), view(K.x2, startk:stopk), K.parms, K.kernel)
 end
 
-function nlfisub{T<:Number}(K::KernelMatrix{T}, v::SVector{4, Int64})::KernelMatrix{T}
+function nlfisub(K::KernelMatrix{T}, v::SVector{4, Int64})::KernelMatrix{T} where{T<:Number}
   return submatrix(K, v[1], v[2], v[3], v[4])
 end
 
-function submatrix_nystrom{T<:Number}(K::KernelMatrix{T}, loj::Int64, hij::Int64, lok::Int64,
-                                      hik::Int64, landmarkinds::Vector{Int64})::KernelMatrix{T}
+function submatrix_nystrom(K::KernelMatrix{T}, loj::Int64, hij::Int64, lok::Int64,
+                           hik::Int64, landmarkinds::Vector{Int64})::KernelMatrix{T} where{T<:Number}
   K.x1 == K.x2 || error("At least for now, this only works for K.x1 == K.x2")
   nystromkernel = NystromKernel(T, K.kernel, K.x1[landmarkinds], K.parms)
   return KernelMatrix(view(K.x1, loj:hij), view(K.x2, lok:hik), K.parms, nystromkernel)
@@ -99,7 +99,7 @@ function fill_landmarks!(lmk_mutate::AbstractVector, xpts::AbstractVector)
   nothing
 end
 
-function vv_to_m{T}(V::Vector{Vector{T}})::Matrix{T}
+function vv_to_m(V::Vector{Vector{T}})::Matrix{T} where{T}
   V1len = length(V[1])
   Out   = zeros(T, V1len, length(V))
   for j in eachindex(V)

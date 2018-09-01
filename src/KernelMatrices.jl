@@ -1,7 +1,7 @@
 
 module KernelMatrices
 
-  using StaticArrays
+  using StaticArrays, LinearAlgebra
   import IterTools, GeometricalPredicates
 
   include("structstypes.jl")
