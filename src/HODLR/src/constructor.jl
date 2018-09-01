@@ -52,11 +52,11 @@ function DerivativeHODLR(K::KernelMatrix{T}, dfun::Function, HK::KernelHODLR{T};
 
   # Get the landmark point vector, and global S and Sj:
   lndmk  = K.x1[Int64.(round.(linspace(1, size(K)[1], HK.mrnk)))]
-  S      = cholfact(Symmetric(full(KernelMatrices.KernelMatrix(lndmk, lndmk, K.parms, K.kernel)) + 1.0e-12I))
-  Sj     = Symmetric(full(KernelMatrices.KernelMatrix(lndmk, lndmk, K.parms, dfun)))
+  S      = cholfact(Symmetric(full(KernelMatrices.KernelMatrix{T}(lndmk, lndmk, K.parms, K.kernel)) + 1.0e-12I))
+  Sj     = Symmetric(full(KernelMatrices.KernelMatrix{T}(lndmk, lndmk, K.parms, dfun)))
 
   # Declare the derivative kernel matrix:
-  dK     = KernelMatrix(K.x1, K.x2, K.parms, dfun)
+  dK     = KernelMatrix{T}(K.x1, K.x2, K.parms, dfun)
 
   # Get the leaves in position:
   leaves = mapf(x->Symmetric(dK[x[1]:x[2], x[3]:x[4]]), HK.leafindices, nwrk, plel)
@@ -75,7 +75,7 @@ end
 # Construct the leaves of the EXACT second derivative of a HODLR matrix.
 function SecondDerivativeLeaves(K::KernelMatrix{T}, djk::Function, lfi::AbstractVector, 
                                 plel::Bool=false) where{T<:Number}
-  d2K    = KernelMatrices.KernelMatrix(K.x1, K.x2, K.parms, djk)
+  d2K    = KernelMatrices.KernelMatrix{T}(K.x1, K.x2, K.parms, djk)
   return mapf(x->Symmetric(d2K[x[1]:x[2], x[3]:x[4]]), lfi, nworkers(), plel)
 end
 
@@ -84,7 +84,7 @@ end
 # Construct the off-diagonal blocks of the EXACT second derivative of a HODLR matrix.
 function SecondDerivativeBlocks(K::KernelMatrix{T}, djk::Function, nlfi::AbstractVector,
                                 mrnk::Int64, plel::Bool=false) where{T<:Number}
-  d2K    = KernelMatrices.KernelMatrix(K.x1, K.x2, K.parms, djk)
+  d2K    = KernelMatrices.KernelMatrix{T}(K.x1, K.x2, K.parms, djk)
   lndmk  = K.x1[Int64.(round.(linspace(1, size(K)[1], mrnk)))]
   B      = map(nlf -> mapf(x->SBlock(nlfisub(d2K, x), djk, lndmk), nlf, nworkers(), plel), nlfi)
   return B

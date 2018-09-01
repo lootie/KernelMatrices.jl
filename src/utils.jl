@@ -88,7 +88,7 @@ function submatrix_nystrom(K::KernelMatrix{T}, loj::Int64, hij::Int64, lok::Int6
                            hik::Int64, landmarkinds::Vector{Int64})::KernelMatrix{T} where{T<:Number}
   K.x1 == K.x2 || error("At least for now, this only works for K.x1 == K.x2")
   nystromkernel = NystromKernel(T, K.kernel, K.x1[landmarkinds], K.parms)
-  return KernelMatrix(view(K.x1, loj:hij), view(K.x2, lok:hik), K.parms, nystromkernel)
+  return KernelMatrix{T}(view(K.x1, loj:hij), view(K.x2, lok:hik), K.parms, nystromkernel)
 end
 
 function fill_landmarks!(lmk_mutate::AbstractVector, xpts::AbstractVector)

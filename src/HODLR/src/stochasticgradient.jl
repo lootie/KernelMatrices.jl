@@ -60,9 +60,9 @@ end
 # You need to supply a vector of derivative functions here, which is maybe a little wacky.
 # But otherwise, pretty straightforward function.
 function stoch_profile_gradient(K::KernelMatrix{T}, HK::KernelHODLR{T}, dat::Vector{T},
-                                           dfuns::Vector{Function}, vecs::Vector{Vector{T}};
-                                           plel::Bool=false, verbose::Bool=false,
-                                           shuffle::Bool=false)::Vector{T} where{T<:Number}
+                                dfuns::Vector{Function}, vecs::Vector{Vector{T}};
+                                plel::Bool=false, verbose::Bool=false,
+                                shuffle::Bool=false)::Vector{T} where{T<:Number}
   # Test stuff:
   HK.U == nothing                  || error("The matrix needs to be factorized for this to work.")
   length(dfuns) == length(K.parms) || error("You didn't supply the right number of gradient funs.")

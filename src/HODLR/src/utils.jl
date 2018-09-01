@@ -141,10 +141,10 @@ function invapply!(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Matri
 end
 
 function DBlock(K::KernelMatrix{T}, dfun::Function, lndmks::AbstractVector)::DerivativeBlock{T} where{T<:Number}
-  K1p  = full(KernelMatrix(K.x1, lndmks, K.parms, K.kernel))
-  Kp2  = full(KernelMatrix(lndmks, K.x2, K.parms, K.kernel))
-  K1pd = full(KernelMatrix(K.x1, lndmks, K.parms, dfun))
-  Kp2d = full(KernelMatrix(lndmks, K.x2, K.parms, dfun))
+  K1p  = full(KernelMatrix{T}(K.x1, lndmks, K.parms, K.kernel))
+  Kp2  = full(KernelMatrix{T}(lndmks, K.x2, K.parms, K.kernel))
+  K1pd = full(KernelMatrix{T}(K.x1, lndmks, K.parms, dfun))
+  Kp2d = full(KernelMatrix{T}(lndmks, K.x2, K.parms, dfun))
   return DerivativeBlock(K1p, K1pd, Kp2, Kp2d)
 end
 
@@ -174,8 +174,8 @@ end
 
 function SBlock(K::KernelMatrix{T}, djk::Function, 
                 lndmks::AbstractVector)::SecondDerivativeBlock{T} where{T<:Number}
-  K1pdk = full(KernelMatrix(K.x1, lndmks, K.parms, djk))
-  Kp2dk = full(KernelMatrix(lndmks, K.x2, K.parms, djk))
+  K1pdk = full(KernelMatrix{T}(K.x1, lndmks, K.parms, djk))
+  Kp2dk = full(KernelMatrix{T}(lndmks, K.x2, K.parms, djk))
   return SecondDerivativeBlock(K1pdk, Kp2dk)
 end
 
