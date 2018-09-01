@@ -1,10 +1,10 @@
 
 # Load in the relevant packages, some on all workers:
-using NLopt, JLD, NearestNeighbors, StatsBase
-@everywhere using KernelMatrices, KernelMatrices.HODLR, StaticArrays, SpecialFunctions
+using Distributed, Random, NLopt, JLD, NearestNeighbors, StatsBase
+@everywhere using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, SpecialFunctions
 
 # Set the seed for reproducibility:
-srand(27182)
+Random.seed!(27182)
 
 # Load in and declare the kernel functions and exact loglik-related functions on all workers:
 @everywhere begin

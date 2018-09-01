@@ -49,27 +49,27 @@ function HODLR_hess_slv_no2d(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, DKk::D
 end
 
 function HODLR_hess_tr1_sym_diag(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, vec::Vector{T}) where{T<:Number}
-  tp1 = Array{T}(length(vec))
-  tp2 = Array{T}(length(vec))
-  At_ldiv_B!(tp1, HK.W, vec)
-  LinearAlgebra.A_ldiv_B!(tp2, HK.W, DKj*tp1)
+  tp1 = Array{T}(undef, length(vec))
+  tp2 = Array{T}(undef, length(vec))
+  _At_ldiv_B!(tp1, HK.W, vec)
+  ldiv!(tp2, HK.W, DKj*tp1)
   return dot(tp2, tp2)
 end
 
 function HODLR_hess_tr1_sym_offdiag(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, 
                                     DKk::DerivativeHODLR{T}, vec::Vector{T}) where{T<:Number}
-  tp1 = Array{T}(length(vec))
-  tp2 = Array{T}(length(vec))
-  At_ldiv_B!(tp1, HK.W, vec)
-  LinearAlgebra.A_ldiv_B!(tp2, HK.W, DKj*tp1 + DKk*tp1)
+  tp1 = Array{T}(undef, length(vec))
+  tp2 = Array{T}(undef, length(vec))
+  _At_ldiv_B!(tp1, HK.W, vec)
+  ldiv!(tp2, HK.W, DKj*tp1 + DKk*tp1)
   return dot(tp2, tp2)
 end
 
 function HODLR_hess_tr2(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, DKk::DerivativeHODLR{T},
                         D2B2::Vector{Vector{SecondDerivativeBlock{T}}}, D2BL::Vector{Symmetric{T,Matrix{T}}},
                         Sjk::Symmetric{T, Matrix{T}}, vec::Vector{T}) where{T<:Number}
-  tp1 = Array{T}(length(vec))
-  At_ldiv_B!(tp1, HK.W, vec)
+  tp1 = Array{T}(undef, length(vec))
+  _At_ldiv_B!(tp1, HK.W, vec)
   return dot(tp1, Deriv2mul(DKj, DKk, D2B2, D2BL, Sjk, tp1))
 end
 
@@ -111,12 +111,12 @@ function stoch_hessian(K::KernelMatrix{T}, HK::KernelHODLR{T}, dat::Vector{T},
   HKsd = HK\dat 
   # Get the derivative functions:
   DKs = map(df -> DerivativeHODLR(K, df, HK, plel=plel), d1funs)
-  Out = -full(stoch_fisher(K, HK, DKs, vecs, plel=plel, shuffle=shuffle))
+  Out = -Matrix(stoch_fisher(K, HK, DKs, vecs, plel=plel, shuffle=shuffle))
   # Now add the things for the Hessian beyond the fisher matrix:
   for j in 1:length(d1funs)
     for k in j:length(d1funs)
       dfunjk = d2funs[j][k-j+1]
-      if dfunjk != ZeroFunction()
+      if typeof(dfunjk) != ZeroFunction
         sterm,t2 = HODLR_hess_extra(K, HK, DKs[j], DKs[k], dfunjk, dat, HKsd, vecs, 
                                     plel=plel, profile=profile)
         Out[j,k]+= (0.5*t2 - 0.5*sterm)

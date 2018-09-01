@@ -1,9 +1,9 @@
 
-using KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors, JLD, SpecialFunctions
+using LinearAlgebra, Random, KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors, JLD, SpecialFunctions
 include("../fitting/fitting_funs.jl")
 
 # Set the seed for reproducibility:
-srand(57721) 
+Random.seed!(57721) 
 
 # Choose the kernel function to use:
 kfun = mtn_kernfun

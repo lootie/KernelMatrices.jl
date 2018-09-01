@@ -33,17 +33,17 @@ function nll_objective(prms::AbstractVector, grad::Vector, locs::AbstractVector,
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
-  opts.verb && println("Assembly+factorize took       $(round(tim1, 3)) seconds.")
+  opts.verb && println("Assembly+factorize took       $(round(tim1, digits=3)) seconds.")
   tim2 = @elapsed nll     = negloglik(HK, dats)
-  opts.verb && println("Negative log-lik took         $(round(tim2, 3)) seconds.")
+  opts.verb && println("Negative log-lik took         $(round(tim2, digits=3)) seconds.")
   tim3 = @elapsed begin
   if length(grad) > 0
     grad .= stoch_gradient(nllK, HK, dats, opts.dfuns, opts.saav, plel=opts.apll, shuffle=!(opts.saa_fix))
   end
   end
-  opts.verb && println("Gradient took                 $(round(tim3, 3)) seconds.")
+  opts.verb && println("Gradient took                 $(round(tim3, digits=3)) seconds.")
   opts.verb && println()
-  opts.verb && println("All told, this objective function call took $(round(tim1+tim2+tim3, 3)) seconds.")
+  opts.verb && println("All told, this objective function call took $(round(tim1+tim2+tim3, digits=3)) seconds.")
   opts.verb && println()
   return nll
 end
@@ -64,17 +64,17 @@ function nlpl_objective(prms::AbstractVector, grad::Vector, locs::AbstractVector
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
-  opts.verb && println("Assembly+factorize took       $(round(tim1, 3)) seconds.")
+  opts.verb && println("Assembly+factorize took       $(round(tim1, digits=3)) seconds.")
   tim2 = @elapsed nll     = profile_negloglik(HK, dats)
-  opts.verb && println("Negative log-lik took         $(round(tim2, 3)) seconds.")
+  opts.verb && println("Negative log-lik took         $(round(tim2, digits=3)) seconds.")
   tim3 = @elapsed begin
   if length(grad) > 0
     grad .= stoch_profile_gradient(nllK, HK, dats, opts.dfuns, opts.saav, plel=opts.apll, shuffle=!(opts.saa_fix))
   end
   end
-  opts.verb && println("Gradient took                 $(round(tim3, 3)) seconds.")
+  opts.verb && println("Gradient took                 $(round(tim3, digits=3)) seconds.")
   opts.verb && println()
-  opts.verb && println("All told, this objective function call took $(round(tim1+tim2+tim3, 3)) seconds.")
+  opts.verb && println("All told, this objective function call took $(round(tim1+tim2+tim3, digits=3)) seconds.")
   opts.verb && println()
   return nll
 end
@@ -85,7 +85,7 @@ function nll_gradient(prms::AbstractVector, locs::AbstractVector, dats::Abstract
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
-  opts.verb && println("Assembly+factorize took       $(round(tim1, 3)) seconds.")
+  opts.verb && println("Assembly+factorize took       $(round(tim1, digits=3)) seconds.")
   tim2 = @elapsed begin
   grad = stoch_gradient(nllK, HK, dats, opts.dfuns, opts.saav, plel=opts.apll, shuffle=!(opts.saa_fix))
   end
@@ -101,12 +101,12 @@ function nll_hessian(prms::AbstractVector, locs::AbstractVector, dats::AbstractV
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
-  opts.verb && println("Assembly+factorize took      $(round(tim1, 3)) seconds.")
+  opts.verb && println("Assembly+factorize took      $(round(tim1, digits=3)) seconds.")
   tim2 = @elapsed begin
   Hess = stoch_hessian(nllK,HK,dats,opts.dfuns,d2funs,opts.saav,plel=opts.apll,
                        verbose=false,shuffle=!(opts.saa_fix))
   end
-  opts.verb && println("Hessian took                 $(round(tim2, 3)) seconds.")
+  opts.verb && println("Hessian took                 $(round(tim2, digits=3)) seconds.")
   opts.verb && println()
   return Hess
 end
@@ -119,12 +119,12 @@ function nlpl_hessian(prms::AbstractVector, locs::AbstractVector, dats::Abstract
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
-  opts.verb && println("Assembly+factorize took      $(round(tim1, 3)) seconds.")
+  opts.verb && println("Assembly+factorize took      $(round(tim1, digits=3)) seconds.")
   tim2 = @elapsed begin
   Hess = stoch_hessian(nllK,HK,dats,opts.dfuns,d2funs,opts.saav,plel=opts.apll,
                         verbose=false,shuffle=!(opts.saa_fix),profile=true)
   end
-  opts.verb && println("Hessian took                 $(round(tim2, 3)) seconds.")
+  opts.verb && println("Hessian took                 $(round(tim2, digits=3)) seconds.")
   opts.verb && println()
   return Hess
 end
@@ -148,7 +148,7 @@ function gpsimulate(locs::AbstractVector, parms::Vector, opts::Maxlikopts;
   # Create the KernelMatrix, and either get its exact Cholesky or use HODLR to simulate it:
   covK = KernelMatrices.KernelMatrix(lcss, lcss, parms, opts.kernfun) 
   if exact
-    cKf  = chol(Symmetric(full(covK)))
+    cKf  = cholesky(Symmetric(full(covK))).U
     mul!(out, transpose(cKf), inp)
   else
     cHK  = HODLR.KernelHODLR(covK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)

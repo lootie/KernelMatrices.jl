@@ -1,5 +1,5 @@
 
-using RCall, StaticArrays, SpecialFunctions
+using RCall, StaticArrays, SpecialFunctions, Random, LinearAlgebra
 
 # A little function that converts the parameters from our modified Matern to the standard ones.
 function stein_to_schlather(scale::Float64, range::Float64, nu::Float64)::Tuple{Float64, Float64}
@@ -50,7 +50,7 @@ end
 
 using JLD
 
-srand(111234)
+Random.seed!(111234)
 stein_p1 = [3.0, 5.0,  1.0]
 stein_p2 = [3.0, 50.0, 1.0]
 seeds_p1 = rand(Int32, 5)

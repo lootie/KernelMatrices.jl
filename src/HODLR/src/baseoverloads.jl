@@ -43,10 +43,10 @@ end
 
 # VERY computationally inefficient. This really is only for testing.
 function Base.full(W::FactorHODLR{T})::Matrix{T} where{T<:Number}
-  Out = cat([1,2], W.leafW...)
+  Out = cat(W.leafW..., dims=[1,2])
   # Multiply the nonleaves:
   for j in 1:length(W.nonleafW)
-    Out = Out*cat([1,2], full.(W.nonleafW[j])...)
+    Out = Out*cat(full.(W.nonleafW[j])..., dims=[1,2])
   end
   return Out
 end
@@ -55,7 +55,7 @@ function LinearAlgebra.mul!(target::StridedArray, W::LowRankW{T}, src::StridedAr
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
-  mul!(target, W.M, W.X*At_mul_B(W.M, src))
+  mul!(target, W.M, W.X*t_mul(W.M, src))
   @simd for j in eachindex(target)
      @inbounds target[j] += src[j]
   end
@@ -66,29 +66,29 @@ function _At_mul_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) whe
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
-  mul!(target, W.M, At_mul_B(W.X, At_mul_B(W.M, src)))
+  mul!(target, W.M, t_mul(W.X, t_mul(W.M, src)))
   @simd for j in eachindex(target)
      @inbounds target[j] += src[j]
   end
   return target
 end
 
-function LinearAlgebra.A_ldiv_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
+function LinearAlgebra.ldiv!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
-  mul!(target, W.M, -lrx_solterm(W, At_mul_B(W.M, src)))
+  mul!(target, W.M, -lrx_solterm(W, t_mul(W.M, src)))
   @simd for j in eachindex(target)
      @inbounds target[j] += src[j]
   end
   return target
 end
 
-function LinearAlgebra.At_ldiv_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
+function _At_ldiv_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
-  mul!(target, W.M, -lrx_solterm_t(W, At_mul_B(W.M, src)))
+  mul!(target, W.M, -lrx_solterm_t(W, t_mul(W.M, src)))
   @simd for j in eachindex(target)
      @inbounds target[j] += src[j]
   end
@@ -127,7 +127,7 @@ function _At_mul_B!(target::StridedVector, A::StridedMatrix, src::StridedVector)
   mul!(target, transpose(A), src)
 end
 
-function LinearAlgebra.A_ldiv_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
+function LinearAlgebra.ldiv!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the leaf vectors:
@@ -141,7 +141,7 @@ function LinearAlgebra.A_ldiv_B!(target::StridedVector, W::FactorHODLR{T}, src::
   return target
 end
 
-function LinearAlgebra.At_ldiv_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
+function _At_ldiv_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the nonleafW vectors in the correct order:
@@ -187,20 +187,20 @@ function _At_mul_B!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector
   return mul!(target, K, src)
 end
 
-function LinearAlgebra.A_ldiv_B!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
+function LinearAlgebra.ldiv!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
   if K.W == nothing
     error("No solves without factorization.")
   else
     # divide by W, then by W^{T}:
     tmp = Array{eltype(target)}(undef, length(target))
-    A_ldiv_B!(tmp, K.W, src)
-    At_ldiv_B!(target, K.W, tmp)
+    ldiv!(tmp, K.W, src)
+    _At_ldiv_B!(target, K.W, tmp)
   end
   return target
 end
 
-function LinearAlgebra.At_ldiv_B!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
-  return A_ldiv_B!(target, K, src)
+function _At_ldiv_B!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
+  return ldiv!(target, K, src)
 end
 
 function LinearAlgebra.logdet(K::KernelHODLR{T})::Float64 where{T<:Number}
@@ -279,7 +279,7 @@ end
 
 function LinearAlgebra.:\(K::KernelHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(undef, length(source))
-  A_ldiv_B!(target, K, source)
+  ldiv!(target, K, source)
   return target
 end
 
@@ -303,13 +303,13 @@ end
 
 function LinearAlgebra.:\(W::LowRankW{T}, src::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(undef, length(source))
-  A_ldiv_B!(target, W, src)
+  ldiv!(target, W, src)
   return target
 end
 
 function LinearAlgebra.:\(W::LowRankW{T}, src::Matrix{T})::Matrix{T} where{T<:Number}
   target = Array{T}(undef, size(src))
-  A_ldiv_B!(target, W, src)
+  ldiv!(target, W, src)
   return target
 end
 

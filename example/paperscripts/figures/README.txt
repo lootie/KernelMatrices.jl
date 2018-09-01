@@ -1,0 +1,5 @@
+
+These plots were made in julia 0.6 with an unstable version of PlotlyJS. I cannot make ANY promises
+that this code will run without error. Hopefully it is at least informative of how the figures in
+the paper were generated and provides a template for making similar figures.
+

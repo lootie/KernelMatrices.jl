@@ -35,14 +35,14 @@ W    = full(HK.W)
 @test isapprox(HKf\tvec, HK\tvec)
 
 # Equality of factor solve:
-A_ldiv_B!(tmp1, HK.W, tvec)
+ldiv!(tmp1, HK.W, tvec)
 @test isapprox(tmp1, W\tvec)
 
 # Equality of factor transpose solve:
-At_ldiv_B!(tmp2, HK.W, tmp1)
-@test isapprox(tmp2, At_ldiv_B(W, tmp1))
+HODLR._At_ldiv_B!(tmp2, HK.W, tmp1)
+@test isapprox(tmp2, transpose(W)\tmp1)
 
 # Equality of HODLR solve:
-At_ldiv_B!(tmp2, HK.W, tmp1)
-@test isapprox(tmp2, A_mul_Bt(W, W)\tvec)
+HODLR._At_ldiv_B!(tmp2, HK.W, tmp1)
+@test isapprox(tmp2, (W*transpose(W))\tvec)
 

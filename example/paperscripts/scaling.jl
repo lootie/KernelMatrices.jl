@@ -1,7 +1,9 @@
 
+using Distributed, Random
+
 # Bring some things into scope on every worker:
 @everywhere begin
-using KernelMatrices, KernelMatrices.HODLR, StaticArrays, SpecialFunctions
+using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, SpecialFunctions
 # Load in the scripts that define the generic functions:
 include("../fitting/fitting_funs.jl")
 include("../fitting/generic_exact_functions.jl")
@@ -12,7 +14,7 @@ d2funs    = [[HODLR.ZeroFunction(), mt1_kernfun_d1_d2], [mt1_kernfun_d2_d2]]
 end
 
 # Set the seed so that the numbers in the paper can be recreated exactly:
-srand(31415)
+Random.seed!(31415)
 
 # Some parameters for this particular simulation:
 ranks     = [32, 72, 100]

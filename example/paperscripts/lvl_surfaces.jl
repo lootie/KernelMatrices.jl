@@ -1,6 +1,8 @@
 
+using Distributed, Random
+
 @everywhere begin
-using KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors, NLopt, SpecialFunctions
+using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors, NLopt, SpecialFunctions
 
 # Load in the scripts and data files:
 include("../fitting/fitting_funs.jl")
@@ -13,7 +15,7 @@ d2funs   = [[mt1_kernfun_d1_d1, mt1_kernfun_d1_d2], [mt1_kernfun_d2_d2]]
 end
 
 # Set the seed for the same output each time:
-srand(12345)
+Random.seed!(12345)
 
 # Set some HODLR options:
 opts = HODLR.Maxlikopts(

@@ -61,8 +61,8 @@ end
 
 function lrsymfact(U12::Matrix{T}, U21::Matrix{T})::LowRankW{T} where{T<:Number}
   sz     = size(U12)[2]
-  qr12   = qrfact!(U12)
-  qr21   = qrfact!(U21)
+  qr12   = qr!(U12)
+  qr21   = qr!(U21)
   Q1, R1 = Array(qr12.Q), qr12.R
   Q2, R2 = Array(qr21.Q), qr21.R
   X      = symfact(Tmatrix(R1, R2))-I
@@ -94,7 +94,8 @@ function apply_block(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Mat
   # Perform a couple of type-tests:
   Avecbol    = typeof(A)       == Vector{T}
   # Get application fun:
-  apfun      = solv ? (transp ? At_ldiv_B! : LinearAlgebra.A_ldiv_B!) : (transp ? _At_mul_B! : mul!)
+  apfun      = solv ? (transp ? _At_ldiv_B! : ldiv!) : (transp ? _At_mul_B! : mul!)
+  #apfun      = solv ? (transp ? At_ldiv_B! : LinearAlgebra.A_ldiv_B!) : (transp ? _At_mul_B! : mul!)
   # Get indices, make sure function call makes sense:
   szind      = transp ? 1 : 2
   inds       = cumsum(map(x->size(x)[szind], Wvec))

@@ -16,7 +16,7 @@ function _solve_subproblem_exact(g::Vector, B::Symmetric{Float64, Matrix{Float64
   pl   = zeros(length(g))
   for cnt in 0:10
     Bi    = Symmetric(B + I*lval)
-    R     = chol(Bi)
+    R     = cholesky(Bi).U
     pl    = -Bi\g
     ql    = R\pl
     lval += abs2(norm(pl)/norm(ql))*(norm(pl)-del)/del
@@ -45,7 +45,7 @@ function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
       fx = nll_objective(xv, gx, loc_s, dat_s, opts)
     end
     end
-    vrb && println("objective+gradient  call took this long:  $(round(t1, 4))")
+    vrb && println("objective+gradient  call took this long:  $(round(t1, digits=4))")
     t2 = @elapsed begin
     if profile
       hx .= nlpl_hessian(xv, loc_s, dat_s, opts, d2funs, strict)
@@ -53,15 +53,15 @@ function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
       hx .= nll_hessian(xv, loc_s, dat_s, opts, d2funs, strict)
     end
     end
-    vrb && println("Hessian call took this long:              $(round(t2, 4))")
-    vrb && println("Total time for the iteration:             $(round(t1+t2, 4))")
+    vrb && println("Hessian call took this long:              $(round(t2, digits=4))")
+    vrb && println("Total time for the iteration:             $(round(t1+t2, digits=4))")
     vrb && println()
     # Solve the corresponding sub-problem:
     ro  .= _solve_subproblem_exact(gx, Symmetric(hx), dl)
     if profile
-      fxp  = nlpl_objective(xv.+ro, Array{Float64}(0), loc_s, dat_s, opts)
+      fxp  = nlpl_objective(xv.+ro, Array{Float64}(undef, 0), loc_s, dat_s, opts)
     else
-      fxp  = nll_objective(xv.+ro, Array{Float64}(0), loc_s, dat_s, opts)
+      fxp  = nll_objective(xv.+ro, Array{Float64}(undef, 0), loc_s, dat_s, opts)
     end
     r1   = _rho(fxp, xv, fx, gx, Symmetric(hx), ro)
     # Perform tests on solution of sub-problem:
@@ -77,7 +77,7 @@ function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
   end
   vrb && println("Total number of calls: $cnt")
   if profile
-    unshift!(xv, nlpl_scale(xv, loc_s, dat_s, opts))
+    pushfirst!(xv, nlpl_scale(xv, loc_s, dat_s, opts))
   end
   return xv
 end
