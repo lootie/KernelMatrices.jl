@@ -84,7 +84,7 @@ function apply_block(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Mat
   # Perform a couple of type-tests:
   Avecbol    = typeof(A)       == Vector{T}
   # Get application fun:
-  apfun      = solv ? (transp ? At_ldiv_B! : A_ldiv_B!) : (transp ? At_mul_B! : A_mul_B!)
+  apfun      = solv ? (transp ? At_ldiv_B! : LinearAlgebra.A_ldiv_B!) : (transp ? At_mul_B! : A_mul_B!)
   # Get indices, make sure function call makes sense:
   szind      = transp ? 1 : 2
   inds       = cumsum(map(x->size(x)[szind], Wvec))

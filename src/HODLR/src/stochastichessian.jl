@@ -52,7 +52,7 @@ function HODLR_hess_tr1_sym_diag(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, ve
   tp1 = Array{T}(length(vec))
   tp2 = Array{T}(length(vec))
   At_ldiv_B!(tp1, HK.W, vec)
-  A_ldiv_B!(tp2, HK.W, DKj*tp1)
+  LinearAlgebra.A_ldiv_B!(tp2, HK.W, DKj*tp1)
   return dot(tp2, tp2)
 end
 
@@ -61,7 +61,7 @@ function HODLR_hess_tr1_sym_offdiag(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T},
   tp1 = Array{T}(length(vec))
   tp2 = Array{T}(length(vec))
   At_ldiv_B!(tp1, HK.W, vec)
-  A_ldiv_B!(tp2, HK.W, DKj*tp1 + DKk*tp1)
+  LinearAlgebra.A_ldiv_B!(tp2, HK.W, DKj*tp1 + DKk*tp1)
   return dot(tp2, tp2)
 end
 
