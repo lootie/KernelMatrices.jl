@@ -14,6 +14,10 @@ function Base.size(W::LowRankW{T})::Tuple{Int64, Int64} where{T<:Number}
   return size(W.M,1), size(W.M,1)
 end
 
+function Base.size(W::LowRankW{T}, j::Int64)::Int64 where{T<:Number}
+  return ifelse(j==1, size(W.M,1), size(W.M,2))
+end
+
 function Base.full(M::LowRankW{T})::Matrix{T} where{T<:Number}
   return I + A_mul_Bt(M.M*M.X, M.M)
 end

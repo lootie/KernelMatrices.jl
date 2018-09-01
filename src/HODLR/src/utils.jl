@@ -121,7 +121,7 @@ function invapply!(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Matri
   if parallel
     jmp   = Int64(length(Wvec)/(2*length(Uvec[lvl])))
     WvecV = imap(collect, partition(Wvec, jmp, 2*jmp))
-    WvecU = imap(collect, partition(IterTools.drop(Wvec, jmp), jmp, 2*jmp) )
+    WvecU = imap(collect, partition(IterTools.drop(Wvec, jmp), jmp, 2*jmp))
     Vvec[lvl] = map(x->apply_block(x[1], x[2], true, false), zip(WvecV, Vvec[lvl]))
     Uvec[lvl] = map(x->apply_block(x[1], x[2], true, false), zip(WvecU, Uvec[lvl]))
   else

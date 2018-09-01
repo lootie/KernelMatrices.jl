@@ -4,13 +4,13 @@
 mutable struct ZeroFunction <: Function end
 
 # A struct to efficiently store low rank matrices of the form (I + M*X*M')(I + M*X*M')'.
-mutable struct LowRankW{T<:Number} 
+mutable struct LowRankW{T<:Number} <: LinearAlgebra.Factorization{T}
   M              ::Matrix{T}
   X              ::Matrix{T}
 end
 
 # A struct for the symmetric factor of a HODLR matrix.
-mutable struct FactorHODLR{T<:Number} 
+mutable struct FactorHODLR{T<:Number} <: LinearAlgebra.Factorization{T}
   leafW          :: Vector{Matrix{T}}
   leafWf         :: Vector{LU{T, Matrix{T}}}
   leafWtf        :: Vector{LU{T, Matrix{T}}}

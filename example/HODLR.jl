@@ -45,7 +45,7 @@ println("Not-precompiled assembly of HODLR matrix with Nystrom blocks, N=$N and 
 
 println()
 println("Not-precommpiled symmetric factorization of the last matrix is done in:")
-@time HODLR.symmetricfactorize!(HK, verbose=vrbs)
+#@time HODLR.symmetricfactorize!(HK, verbose=true)
 
 # Now the struct HK supports fast solves and log-determinants. Example syntax is:
   # HK \ randn(N)
