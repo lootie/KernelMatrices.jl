@@ -1,9 +1,9 @@
 
 # KernelMatrices.jl
 
-This software suite is a companion to [this paper](https://arxiv.org/abs/1808.03215). It is for
-working with kernel matrices where individual elements can be computed efficiently, so that one can
-write
+This software suite is a companion to the manuscript [Scalable Gaussian Process Computations using
+Hierarchical Matrices](https://arxiv.org/abs/1808.03215). It is for working with kernel matrices
+where individual elements can be computed efficiently, so that one can write
 ```julia
 A[i,j] = F(x[i], y[j], v),
 ```
@@ -103,6 +103,10 @@ complete and heavily commented scripts demonstrating how to do that.
 
 
 # Usage
+
+**Unless you are planning to do hack on the source code, I suggest you use git checkout on a tagged
+release. Version 0.1 is the exact source code used for the corresponding manuscript. Version 0.2 is
+the most recent release, and requires julia version >=0.7.**
 
 All of the code in this repository is defined in a module, which is most easily used the way you
 would use an official julia package. To faciliate that, I suggest adding the directory to your

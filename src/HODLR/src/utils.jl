@@ -1,4 +1,12 @@
 
+function mul_t(A, B)
+  return A*transpose(B)
+end
+
+function t_mul(A, B)
+  return transpose(A)*B
+end
+
 function mapf(f::Function, v, nwrk::Int64, plel::Bool)
   if plel && nwrk > 1 
     return pmap(f, v, batch_size=max(1, div(length(v), nwrk)))
@@ -45,7 +53,7 @@ function symfact(A::Symmetric{T, Matrix{T}})::Matrix{T} where{T<:Number}
 end
 
 function Tmatrix(R1::Matrix{T}, R2::Matrix{T})::Symmetric{Float64} where{T<:Number}
-  R1R2t = A_mul_Bt(R1, R2)
+  R1R2t = mul_t(R1, R2)
   sz    = size(R1R2t)[1]
   Out   = Symmetric([Matrix(I, sz, sz) R1R2t; transpose(R1R2t) Matrix(I, sz, sz)])
   return Out
@@ -69,8 +77,8 @@ end
 
 function lrx_solterm_t(W::LowRankW{T}, v::Array{T}) where{T<:Number}
   luf  = lu!(transpose(W.X) + I)
-  Xv   = At_mul_B(W.X, v)
-  return Xv - At_mul_B(W.X, (luf\Xv))
+  Xv   = t_mul(W.X, v)
+  return Xv - t_mul(W.X, (luf\Xv))
 end
 
 # This function is kind of a beast. The easiest way to understand the signature is to look at 
@@ -86,7 +94,7 @@ function apply_block(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Mat
   # Perform a couple of type-tests:
   Avecbol    = typeof(A)       == Vector{T}
   # Get application fun:
-  apfun      = solv ? (transp ? At_ldiv_B! : LinearAlgebra.A_ldiv_B!) : (transp ? At_mul_B! : A_mul_B!)
+  apfun      = solv ? (transp ? At_ldiv_B! : LinearAlgebra.A_ldiv_B!) : (transp ? _At_mul_B! : mul!)
   # Get indices, make sure function call makes sense:
   szind      = transp ? 1 : 2
   inds       = cumsum(map(x->size(x)[szind], Wvec))
@@ -160,9 +168,9 @@ end
 
 function DBlock_mul_t(B::DerivativeBlock{T}, src::Vector{T}, Kp::Cholesky{T, Matrix{T}},
                       Kpj::Symmetric{T, Matrix{T}})::Vector{T} where{T<:Number}
-  out  = At_mul_B(B.Kp2, (Kp\At_mul_B(B.K1pd, src)))
-  out -= At_mul_B(B.Kp2, Kp\(Kpj*(Kp\(At_mul_B(B.K1p, src)))))
-  out += At_mul_B(B.Kp2d, Kp\At_mul_B(B.K1p, src) )
+  out  = t_mul(B.Kp2, (Kp\t_mul(B.K1pd, src)))
+  out -= t_mul(B.Kp2, Kp\(Kpj*(Kp\(t_mul(B.K1p, src)))))
+  out += t_mul(B.Kp2d, Kp\t_mul(B.K1p, src) )
   return out
 end
 
@@ -210,19 +218,19 @@ function SDBlock_mul_t(Bj::DerivativeBlock{T}, Bk::DerivativeBlock{T},
                        Spj::Symmetric{T, Matrix{T}}, Spk::Symmetric{T, Matrix{T}},
                        Spjk::Symmetric{T, Matrix{T}}) where{T<:Number}
   # The first term:
-  out  = At_mul_B(Bj.Kp2,  Sp\At_mul_B(Bjk.K1pjk, src))
-  out -= At_mul_B(Bj.Kp2,  Sp\(Spk*(Sp\At_mul_B(Bj.K1pd, src))))
-  out += At_mul_B(Bk.Kp2d, Sp\At_mul_B(Bk.K1pd, src))
+  out  = t_mul(Bj.Kp2,  Sp\t_mul(Bjk.K1pjk, src))
+  out -= t_mul(Bj.Kp2,  Sp\(Spk*(Sp\t_mul(Bj.K1pd, src))))
+  out += t_mul(Bk.Kp2d, Sp\t_mul(Bk.K1pd, src))
   # The second term:
-  out += At_mul_B(Bj.Kp2,  Sp\(Spj*(Sp\At_mul_B(Bk.K1pd, src))))
-  out -= At_mul_B(Bj.Kp2,  Sp\(Spj*(Sp\(Spk*(Sp\At_mul_B(Bk.K1p, src))))))
-  out += At_mul_B(Bj.Kp2,  Sp\(Spjk*(Sp\At_mul_B(Bk.K1p, src))))
-  out -= At_mul_B(Bj.Kp2,  Sp\(Spk*(Sp\(Spj*(Sp\At_mul_B(Bk.K1p, src))))))
-  out += At_mul_B(Bk.Kp2d, Sp\(Spj*(Sp\At_mul_B(Bk.K1p, src))))
+  out += t_mul(Bj.Kp2,  Sp\(Spj*(Sp\t_mul(Bk.K1pd, src))))
+  out -= t_mul(Bj.Kp2,  Sp\(Spj*(Sp\(Spk*(Sp\t_mul(Bk.K1p, src))))))
+  out += t_mul(Bj.Kp2,  Sp\(Spjk*(Sp\t_mul(Bk.K1p, src))))
+  out -= t_mul(Bj.Kp2,  Sp\(Spk*(Sp\(Spj*(Sp\t_mul(Bk.K1p, src))))))
+  out += t_mul(Bk.Kp2d, Sp\(Spj*(Sp\t_mul(Bk.K1p, src))))
   # The third term:
-  out += At_mul_B(Bj.Kp2d,   Sp\At_mul_B(Bk.K1pd, src))
-  out -= At_mul_B(Bj.Kp2d,   Sp\(Spk*(Sp\At_mul_B(Bk.K1p, src))))
-  out += At_mul_B(Bjk.Kp2jk, Sp\At_mul_B(Bk.K1p, src))
+  out += t_mul(Bj.Kp2d,   Sp\t_mul(Bk.K1pd, src))
+  out -= t_mul(Bj.Kp2d,   Sp\(Spk*(Sp\t_mul(Bk.K1p, src))))
+  out += t_mul(Bjk.Kp2jk, Sp\t_mul(Bk.K1p, src))
   # return it, and thank god that it is over:
   return out
 end

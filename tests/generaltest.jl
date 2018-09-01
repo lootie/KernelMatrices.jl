@@ -4,7 +4,7 @@
 
 # Load in the basic example matrix:
 include("../example/basicexample.jl")
-using KernelMatrices.HODLR, Base.Test
+using KernelMatrices.HODLR, Test
 
 # Make sure this isn't run for a giant matrix that won't fit in memory:
 N < 2^11 || error("This script is for testing on small matrices only.")

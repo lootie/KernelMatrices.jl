@@ -149,11 +149,11 @@ function gpsimulate(locs::AbstractVector, parms::Vector, opts::Maxlikopts;
   covK = KernelMatrices.KernelMatrix(lcss, lcss, parms, opts.kernfun) 
   if exact
     cKf  = chol(Symmetric(full(covK)))
-    At_mul_B!(out, cKf, inp)
+    mul!(out, transpose(cKf), inp)
   else
     cHK  = HODLR.KernelHODLR(covK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
     HODLR.symmetricfactorize!(cHK, plel=opts.fpll)
-    A_mul_B!(out, cHK.W, inp)
+    mul!(out, cHK.W, inp)
   end
   return lcss, out
 end
