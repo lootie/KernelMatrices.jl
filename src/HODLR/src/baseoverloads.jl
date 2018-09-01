@@ -14,7 +14,7 @@ function Base.size(W::LowRankW{T})::Tuple{Int64, Int64} where{T<:Number}
   return size(W.M,1), size(W.M,1)
 end
 
-function full(M::LowRankW{T})::Matrix{T} where{T<:Number}
+function Base.full(M::LowRankW{T})::Matrix{T} where{T<:Number}
   return I + A_mul_Bt(M.M*M.X, M.M)
 end
 
@@ -22,8 +22,8 @@ function LinearAlgebra.det(W::LowRankW{T})::Float64 where{T<:Number}
   return det(I + At_mul_B(W.M, W.M)*W.X)
 end
 
-function full(K::KernelHODLR{T})::Matrix{T} where{T<:Number}
-  Out = Array{T}(size(K))
+function Base.full(K::KernelHODLR{T})::Matrix{T} where{T<:Number}
+  Out = Array{T}(undef, size(K))
   for (j,pt) in enumerate(K.leafindices)
     Out[pt[1]:pt[2], pt[3]:pt[4]] = K.L[j]
   end
@@ -38,7 +38,7 @@ function full(K::KernelHODLR{T})::Matrix{T} where{T<:Number}
 end
 
 # VERY computationally inefficient. This really is only for testing.
-function full(W::FactorHODLR{T})::Matrix{T} where{T<:Number}
+function Base.full(W::FactorHODLR{T})::Matrix{T} where{T<:Number}
   Out = cat([1,2], W.leafW...)
   # Multiply the nonleaves:
   for j in 1:length(W.nonleafW)
@@ -168,7 +168,7 @@ function LinearAlgebra.A_mul_B!(target::StridedVector, K::KernelHODLR{T}, src::S
     # Zero out the target vector:
     fill!(target, zero(eltype(target)))
     # Multiple by W^{T}, then by W:
-    tmp = Array{eltype(target)}(length(target))
+    tmp = Array{eltype(target)}(undef, length(target))
     At_mul_B!(tmp, K.W, src)
     A_mul_B!(target, K.W, tmp)
   end
@@ -184,7 +184,7 @@ function LinearAlgebra.A_ldiv_B!(target::StridedVector, K::KernelHODLR{T}, src::
     error("No solves without factorization.")
   else
     # divide by W, then by W^{T}:
-    tmp = Array{eltype(target)}(length(target))
+    tmp = Array{eltype(target)}(undef, length(target))
     A_ldiv_B!(tmp, K.W, src)
     At_ldiv_B!(target, K.W, tmp)
   end
@@ -217,7 +217,7 @@ function Base.size(DK::DerivativeHODLR{T})::Tuple{Int64, Int64} where{T<:Number}
   return sz, sz
 end
 
-function full(DK::DerivativeHODLR{T})::Matrix{T} where{T<:Number}
+function Base.full(DK::DerivativeHODLR{T})::Matrix{T} where{T<:Number}
   Out = zeros(T, size(DK))
   for (j,pt) in enumerate(DK.leafindices)
     Out[pt[1]:pt[2], pt[3]:pt[4]] = DK.L[j]
@@ -258,49 +258,49 @@ end
 ##
 
 function LinearAlgebra.:*(K::KernelHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
-  target = Array{T}(length(source))
+  target = Array{T}(undef, length(source))
   A_mul_B!(target, K, source)
   return target
 end
 
 function LinearAlgebra.:*(W::FactorHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
-  target = Array{T}(length(source))
+  target = Array{T}(undef, length(source))
   A_mul_B!(target, W, source)
   return target
 end
 
 function LinearAlgebra.:\(K::KernelHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
-  target = Array{T}(length(source))
+  target = Array{T}(undef, length(source))
   A_ldiv_B!(target, K, source)
   return target
 end
 
 function LinearAlgebra.:*(W::LowRankW{T}, src::Vector{T})::Vector{T} where{T<:Number}
-  target = Array{T}(length(source))
+  target = Array{T}(undef, length(source))
   A_mul_B!(target, W, src)
   return target
 end
 
 function LinearAlgebra.:*(W::LowRankW{T}, src::Matrix{T})::Matrix{T} where{T<:Number}
-  target = Array{T}(size(src))
+  target = Array{T}(undef, size(src))
   A_mul_B!(target, W, src)
   return target
 end
 
 function LinearAlgebra.:*(DK::DerivativeHODLR{T}, src::Vector{T})::Vector{T} where{T<:Number}
-  target = Array{T}(size(src))
+  target = Array{T}(undef, size(src))
   A_mul_B!(target, DK, src)
   return target
 end
 
 function LinearAlgebra.:\(W::LowRankW{T}, src::Vector{T})::Vector{T} where{T<:Number}
-  target = Array{T}(length(source))
+  target = Array{T}(undef, length(source))
   A_ldiv_B!(target, W, src)
   return target
 end
 
 function LinearAlgebra.:\(W::LowRankW{T}, src::Matrix{T})::Matrix{T} where{T<:Number}
-  target = Array{T}(size(src))
+  target = Array{T}(undef, size(src))
   A_ldiv_B!(target, W, src)
   return target
 end

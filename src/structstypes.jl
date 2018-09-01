@@ -3,9 +3,9 @@ mutable struct IncompleteCholesky{T<:Number}
   L::Matrix{T}
 end
 
-mutable struct KernelMatrix{T<:Number, A<:AbstractVector} 
-  x1       ::A
-  x2       ::A
+mutable struct KernelMatrix{T<:Number, A} 
+  x1       ::AbstractVector{A}
+  x2       ::AbstractVector{A}
   parms    ::AbstractVector{T}
   kernel   ::Function
 end
@@ -27,9 +27,9 @@ function NystromKernel(T::Type, kern::Function, landmark::AbstractVector,
       M[j,k] = kern(landmark[j], landmark[k], parms)
     end
   end
-  F = ispd ? cholfact!(Symmetric(M + 1.0e-12I)) : bkfact!(Symmetric(M))
-  tmp1 = Array{T}(length(landmark))
-  tmp2 = Array{T}(length(landmark))
+  F = ispd ? cholesky!(Symmetric(M + 1.0e-12I)) : bkfact!(Symmetric(M))
+  tmp1 = Array{T}(undef, length(landmark))
+  tmp2 = Array{T}(undef, length(landmark))
   return NystromKernel{T}(kern, parms, landmark, tmp1, tmp2, F)
 end
 

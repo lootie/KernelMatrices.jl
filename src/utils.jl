@@ -64,8 +64,8 @@ function hilbertsort(v::Vector)::Vector
     return sort(v)
   else
     ptd = length(v[1])
-    if unique(length.(v)) != [ptd] || !contains(==, [2,3], ptd)
-      error("Can only handle points in 2- or 3-dimensional space at the moment, sry")
+    if unique(length.(v)) != [ptd] || !issubset(ptd, [2,3])
+      error("Can only handle points in 2- or 3-dimensional space at the moment.")
     end
     shfd = shiftpts(v)
     pts  = map(x->GeometricalPredicates.Point(x...), shfd)
@@ -77,7 +77,7 @@ end
 
 function submatrix(K::KernelMatrix{T}, startj::Int64, stopj::Int64, 
                    startk::Int64, stopk::Int64)::KernelMatrix{T} where{T<:Number}
-  return KernelMatrix{T}(view(K.x1, startj:stopj), view(K.x2, startk:stopk), K.parms, K.kernel)
+  return KernelMatrix(view(K.x1, startj:stopj), view(K.x2, startk:stopk), K.parms, K.kernel)
 end
 
 function nlfisub(K::KernelMatrix{T}, v::SVector{4, Int64})::KernelMatrix{T} where{T<:Number}
@@ -88,11 +88,11 @@ function submatrix_nystrom(K::KernelMatrix{T}, loj::Int64, hij::Int64, lok::Int6
                            hik::Int64, landmarkinds::Vector{Int64})::KernelMatrix{T} where{T<:Number}
   K.x1 == K.x2 || error("At least for now, this only works for K.x1 == K.x2")
   nystromkernel = NystromKernel(T, K.kernel, K.x1[landmarkinds], K.parms)
-  return KernelMatrix{T}(view(K.x1, loj:hij), view(K.x2, lok:hik), K.parms, nystromkernel)
+  return KernelMatrix(view(K.x1, loj:hij), view(K.x2, lok:hik), K.parms, nystromkernel)
 end
 
 function fill_landmarks!(lmk_mutate::AbstractVector, xpts::AbstractVector)
-  inds = Int64.(round.(linspace(1, length(xpts), length(lmk_mutate))))
+  inds = Int64.(round.(LinRange(1, length(xpts), length(lmk_mutate))))
   @simd for j in eachindex(inds)
     @inbounds lmk_mutate[j] = xpts[inds[j]]
   end

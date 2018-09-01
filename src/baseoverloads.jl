@@ -21,7 +21,7 @@ end
 
 function getKernelMatrixblock(M::KernelMatrix{T}, startj::Int, endj::Int,
                               startk::Int, endk::Int)::Matrix{T} where{T<:Number}
-  Out = Array{T}(endj-startj+1, endk-startk+1)
+  Out = Array{T}(undef, endj-startj+1, endk-startk+1)
     @inbounds begin
     for j in startj:endj
       for k in startk:endk
@@ -43,7 +43,7 @@ function Base.getindex(M::KernelMatrix{T}, jr::UnitRange{Int64},
 end
 
 function Base.getindex(M::KernelMatrix{T}, j::Int64, kr::UnitRange{Int64})::Vector{T} where{T<:Number}
-  Out = Array{T}(length(kr))
+  Out = Array{T}(undef, length(kr))
   for (k, kpt) in enumerate(kr)
      @inbounds Out[k] = M[j, kpt]
   end
@@ -51,7 +51,7 @@ function Base.getindex(M::KernelMatrix{T}, j::Int64, kr::UnitRange{Int64})::Vect
 end
 
 function Base.getindex(M::KernelMatrix{T}, jr::UnitRange{Int64}, k::Int64)::Vector{T} where{T<:Number}
-  Out = Array{T}(length(jr))
+  Out = Array{T}(undef, length(jr))
   for (j, jpt) in enumerate(jr)
      @inbounds Out[j] = M[jpt, k]
   end
@@ -61,7 +61,7 @@ end
 function Base.getindex(M::KernelMatrix{T}, j::Int64, ::Colon)::Vector{T} where{T<:Number}
   kr  = 1:size(M)[2]
   xj  = M.x1[j]
-  out = Array{T}(length(kr))
+  out = Array{T}(undef, length(kr))
   for j in eachindex(out)
     @inbounds out[j] = M.kernel(xj, M.x2[j], M.parms)
   end
@@ -71,7 +71,7 @@ end
 function Base.getindex(M::KernelMatrix{T}, ::Colon, k::Int64)::Vector{T} where{T<:Number}
   kr  = 1:size(M)[1]
   xk  = M.x2[k]
-  out = Array{T}(length(kr))
+  out = Array{T}(undef, length(kr))
   for k in eachindex(out)
     @inbounds out[k] = M.kernel(M.x1[k], xk, M.parms)
   end
@@ -83,7 +83,7 @@ function LinearAlgebra.A_mul_B!(dest::StridedVector, M::KernelMatrix{T}, src::St
   dl              = length(dest)
   sl == size(M)[2] || error("Matrix and Vector sizes do not agree.")
   dl == size(M)[1] || error("Destination and matrix sizes do not agree.")
-  roww = Array{eltype(src)}(sl)
+  roww = Array{eltype(src)}(undef, sl)
   for j in eachindex(dest)
     fillrow!(roww, M, j)
     @inbounds dest[j] = dot(roww, src)
@@ -96,7 +96,7 @@ function LinearAlgebra.At_mul_B!(dest::StridedVector, M::KernelMatrix{T}, src::S
   dl              = length(dest)
   sl == size(M)[1] || error("Matrix and Vector sizes do not agree.")
   dl == size(M)[2] || error("Destination and matrix sizes do not agree.")
-  coll = Array{eltype(src)}(sl)
+  coll = Array{eltype(src)}(undef, sl)
   for j in eachindex(dest)
     fillcol!(coll, M, j)
     @inbounds dest[j] = dot(coll, src)
@@ -109,7 +109,7 @@ function LinearAlgebra.Ac_mul_B!(dest::StridedVector, M::KernelMatrix{T}, src::S
   dl              = length(dest)
   sl == size(M)[1] || error("Matrix and Vector sizes do not agree.")
   dl == size(M)[2] || error("Destination and matrix sizes do not agree.")
-  coll = Array{eltype(src)}(sl)
+  coll = Array{eltype(src)}(undef, sl)
   for j in eachindex(dest)
     fillcol!(coll, M, j)
     @inbounds dest[j] = dot(conj(coll), src)
@@ -121,7 +121,7 @@ function LinearAlgebra.A_mul_B!(dest::StridedMatrix, M::KernelMatrix{T}, src::St
   size(dest) == size(src) || error("Your target and destination sources don't agree in size")
   nrow = size(M, 1)
   ncol = size(src, 2)
-  roww = Array{eltype(M)}(size(M, 2))
+  roww = Array{eltype(M)}(undef, size(M, 2))
   for j in 1:nrow
     fillrow!(roww, M, j)
     for k in 1:ncol
@@ -135,7 +135,7 @@ function LinearAlgebra.At_mul_B!(dest::StridedMatrix, M::KernelMatrix{T}, src::S
   size(dest) == size(src) || error("Your target and destination sources don't agree in size")
   mncol = size(M, 2)
   ncol  = size(src, 2)
-  coll = Array{eltype(M)}(size(M, 1))
+  coll = Array{eltype(M)}(undef, size(M, 1))
   for j in 1:mncol
     fillcol!(coll, M, j)
     for k in 1:ncol
@@ -149,7 +149,7 @@ function LinearAlgebra.Ac_mul_B!(dest::StridedMatrix, M::KernelMatrix{T}, src::S
   size(dest) == size(src) || error("Your target and destination sources don't agree in size")
   mncol = size(M, 2)
   ncol  = size(src, 2)
-  coll = Array{eltype(M)}(size(M, 1))
+  coll = Array{eltype(M)}(undef, size(M, 1))
   for j in 1:mncol
     fillcol!(coll, M, j)
     conj!(coll)
@@ -161,20 +161,20 @@ function LinearAlgebra.Ac_mul_B!(dest::StridedMatrix, M::KernelMatrix{T}, src::S
 end
 
 function LinearAlgebra.:*(M::KernelMatrix{T}, x::Vector{T})::Vector{T} where{T<:Number}
-  out = Array{eltype(x)}(length(x))
+  out = Array{eltype(x)}(undef, length(x))
   A_mul_B!(out, M, x)
   return out
 end
 
 function LinearAlgebra.:*(M::KernelMatrix{T}, x::Matrix{T})::Matrix{T} where{T<:Number}
-  out = Array{eltype(x)}(size(x))
+  out = Array{eltype(x)}(undef, size(x))
   A_mul_B!(out, M, x)
   return out
 end
 
 function LinearAlgebra.diag(M::KernelMatrix{T}, simple::Bool=false)::Vector{T} where{T<:Number}
   msz = minimum(size(M))
-  out = Array{T}(msz)
+  out = Array{T}(undef, msz)
   if simple
     fill!(out, M[1,1])
   else
@@ -185,7 +185,7 @@ function LinearAlgebra.diag(M::KernelMatrix{T}, simple::Bool=false)::Vector{T} w
   return out
 end
 
-function full(L::IncompleteCholesky{T})::Matrix{T} where{T<:Number}
+function Base.full(L::IncompleteCholesky{T})::Matrix{T} where{T<:Number}
   Out = L.L[:,1] * L.L[:,1]'
   for j in 2:size(L.L,2)
     Out += L.L[:,j] * L.L[:,j]'

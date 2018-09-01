@@ -18,7 +18,7 @@ function profile_negloglik(HK::Union{Matrix{T}, KernelHODLR{T}}, dat::Vector{T})
 end
 
 function scaleparm_mle(prms::AbstractVector, locs::AbstractVector, dats::AbstractVector, opts::Maxlikopts)
-  nllK = KernelMatrices.KernelMatrix{T}(locs, locs, prms, opts.kernfun)
+  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   scal = dot(dats, HK\dats)/length(dats)
@@ -28,7 +28,7 @@ end
 function nll_objective(prms::AbstractVector, grad::Vector, locs::AbstractVector,
                        dats::AbstractVector, opts::Maxlikopts)
   opts.verb && @show prms
-  nllK = KernelMatrices.KernelMatrix{T}(locs, locs, prms, opts.kernfun)
+  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   tim1 = @elapsed begin
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
@@ -49,7 +49,7 @@ function nll_objective(prms::AbstractVector, grad::Vector, locs::AbstractVector,
 end
 
 function nlpl_scale(prms::AbstractVector, locs::AbstractVector, dats::AbstractVector, opts::Maxlikopts)
-  nllK = KernelMatrices.KernelMatrix{T}(locs, locs, prms, opts.kernfun)
+  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   return dot(dats, HK\dats)/length(dats)
@@ -59,7 +59,7 @@ end
 function nlpl_objective(prms::AbstractVector, grad::Vector, locs::AbstractVector,
                        dats::AbstractVector, opts::Maxlikopts)
   opts.verb && @show prms
-  nllK = KernelMatrices.KernelMatrix{T}(locs, locs, prms, opts.kernfun)
+  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   tim1 = @elapsed begin
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
@@ -80,7 +80,7 @@ function nlpl_objective(prms::AbstractVector, grad::Vector, locs::AbstractVector
 end
 
 function nll_gradient(prms::AbstractVector, locs::AbstractVector, dats::AbstractVector, opts::Maxlikopts)
-  nllK = KernelMatrices.KernelMatrix{T}(locs, locs, prms, opts.kernfun)
+  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   tim1 = @elapsed begin
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
@@ -96,7 +96,7 @@ end
 
 function nll_hessian(prms::AbstractVector, locs::AbstractVector, dats::AbstractVector, opts::Maxlikopts,
                      d2funs::Vector{Vector{Function}}, strict::Bool=false)
-  nllK = KernelMatrices.KernelMatrix{T}(locs, locs, prms, opts.kernfun)
+  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   tim1 = @elapsed begin
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
@@ -114,7 +114,7 @@ end
 # Negative Log PROFILE likelihood Hessian
 function nlpl_hessian(prms::AbstractVector, locs::AbstractVector, dats::AbstractVector, opts::Maxlikopts,
                       d2funs::Vector{Vector{Function}}, strict::Bool=false)
-  nllK = KernelMatrices.KernelMatrix{T}(locs, locs, prms, opts.kernfun)
+  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   tim1 = @elapsed begin
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
@@ -130,7 +130,7 @@ function nlpl_hessian(prms::AbstractVector, locs::AbstractVector, dats::Abstract
 end
 
 function fisher_matrix(prms::AbstractVector, locs::AbstractVector, dats::AbstractVector, opts::Maxlikopts)
-  nllK = KernelMatrices.KernelMatrix{T}(locs, locs, prms, opts.kernfun)
+  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   DKs  = map(df -> DerivativeHODLR(nllK, df, HK, plel=opts.apll), opts.dfuns)
@@ -146,7 +146,7 @@ function gpsimulate(locs::AbstractVector, parms::Vector, opts::Maxlikopts;
   out  = zeros(length(lcss))
   inp  = randn(length(lcss))
   # Create the KernelMatrix, and either get its exact Cholesky or use HODLR to simulate it:
-  covK = KernelMatrices.KernelMatrix{T}(lcss, lcss, parms, opts.kernfun) 
+  covK = KernelMatrices.KernelMatrix(lcss, lcss, parms, opts.kernfun) 
   if exact
     cKf  = chol(Symmetric(full(covK)))
     At_mul_B!(out, cKf, inp)

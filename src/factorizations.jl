@@ -11,8 +11,8 @@ function ACA(M::Union{Matrix{T}, KernelMatrix{T}},
 
   # Declare the vectors for storing cols/rows, keeping track of
   # USED column and row indices, and temporary storage.
-  V         = Vector{Vector{T}}(maxsz)
-  U         = Vector{Vector{T}}(maxsz)
+  V         = Vector{Vector{T}}(undef, maxsz)
+  U         = Vector{Vector{T}}(undef, maxsz)
 
   # Get the first row in place:
   strt      = 1
@@ -94,8 +94,8 @@ end
 
 function nystrom_uvt(K::KernelMatrix{T}, N::NystromKernel{T})::Tuple{Matrix{T},Matrix{T}} where{T<:Number}
   typeof(K.x1[1]) == typeof(N.lndmk[1]) || error("Nystrom landmarks don't agree with K points.")
-  K1  = KernelMatrix{T}(K.x1, N.lndmk, K.parms, K.kernel)
-  K2  = KernelMatrix{T}(N.lndmk, K.x2, K.parms, K.kernel)
+  K1  = KernelMatrix(K.x1, N.lndmk, K.parms, K.kernel)
+  K2  = KernelMatrix(N.lndmk, K.x2, K.parms, K.kernel)
   U   = full(K1)
   V   = transpose(N.F\full(K2))
   return U,V

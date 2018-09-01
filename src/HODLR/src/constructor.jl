@@ -15,7 +15,7 @@ function KernelHODLR(K::KernelMatrix{T}, ep::Float64=1.0e-10, maxrank::Int64=0, 
       error("Your nystrom rank is too big. Reduce the HODLR level or nystrom rank.")
     end
     K.x1 == K.x2 || error("This type of matrix doesn't admit a Nystrom kernel appx. Need x1 == x2")
-    nyind = Int64.(round.(linspace(1, size(K)[1], maxrank)))
+    nyind = Int64.(round.(LinRange(1, size(K)[1], maxrank)))
     nyker = KernelMatrices.NystromKernel(T, K.kernel, K.x1[nyind], K.parms, true)
   end
 
@@ -23,8 +23,8 @@ function KernelHODLR(K::KernelMatrix{T}, ep::Float64=1.0e-10, maxrank::Int64=0, 
   leaves = mapf(x->Symmetric(K[x[1]:x[2], x[3]:x[4]]), leafinds, nwrk, plel)
 
   # Get the rest of the decompositions of the non-leaf nodes in place:
-  U = Vector{Vector{Matrix{T}}}(level-1)  
-  V = Vector{Vector{Matrix{T}}}(level-1)  
+  U = Vector{Vector{Matrix{T}}}(undef, level-1)  
+  V = Vector{Vector{Matrix{T}}}(undef, level-1)  
   for j in 1:(level-1)
     if nystrom
       tmpUV = mapf(x->KernelMatrices.nystrom_uvt(nlfisub(K, x), nyker), nonleafinds[j], nwrk, plel)
@@ -51,18 +51,18 @@ function DerivativeHODLR(K::KernelMatrix{T}, dfun::Function, HK::KernelHODLR{T};
   nwrk   = nworkers()
 
   # Get the landmark point vector, and global S and Sj:
-  lndmk  = K.x1[Int64.(round.(linspace(1, size(K)[1], HK.mrnk)))]
-  S      = cholfact(Symmetric(full(KernelMatrices.KernelMatrix{T}(lndmk, lndmk, K.parms, K.kernel)) + 1.0e-12I))
-  Sj     = Symmetric(full(KernelMatrices.KernelMatrix{T}(lndmk, lndmk, K.parms, dfun)))
+  lndmk  = K.x1[Int64.(round.(LinRange(1, size(K)[1], HK.mrnk)))]
+  S      = cholesky(Symmetric(full(KernelMatrices.KernelMatrix(lndmk, lndmk, K.parms, K.kernel)) + 1.0e-12I))
+  Sj     = Symmetric(full(KernelMatrices.KernelMatrix(lndmk, lndmk, K.parms, dfun)))
 
   # Declare the derivative kernel matrix:
-  dK     = KernelMatrix{T}(K.x1, K.x2, K.parms, dfun)
+  dK     = KernelMatrix(K.x1, K.x2, K.parms, dfun)
 
   # Get the leaves in position:
   leaves = mapf(x->Symmetric(dK[x[1]:x[2], x[3]:x[4]]), HK.leafindices, nwrk, plel)
 
   # Get the non-leaves in place:
-  B      = Vector{Vector{DerivativeBlock{T}}}(HK.lvl-1)
+  B      = Vector{Vector{DerivativeBlock{T}}}(undef, HK.lvl-1)
   for j in 1:(HK.lvl-1)
     B[j] = mapf(x->DBlock(nlfisub(K, x), dfun, lndmk), HK.nonleafindices[j], nwrk, plel)
   end
@@ -75,7 +75,7 @@ end
 # Construct the leaves of the EXACT second derivative of a HODLR matrix.
 function SecondDerivativeLeaves(K::KernelMatrix{T}, djk::Function, lfi::AbstractVector, 
                                 plel::Bool=false) where{T<:Number}
-  d2K    = KernelMatrices.KernelMatrix{T}(K.x1, K.x2, K.parms, djk)
+  d2K    = KernelMatrices.KernelMatrix(K.x1, K.x2, K.parms, djk)
   return mapf(x->Symmetric(d2K[x[1]:x[2], x[3]:x[4]]), lfi, nworkers(), plel)
 end
 
@@ -84,8 +84,8 @@ end
 # Construct the off-diagonal blocks of the EXACT second derivative of a HODLR matrix.
 function SecondDerivativeBlocks(K::KernelMatrix{T}, djk::Function, nlfi::AbstractVector,
                                 mrnk::Int64, plel::Bool=false) where{T<:Number}
-  d2K    = KernelMatrices.KernelMatrix{T}(K.x1, K.x2, K.parms, djk)
-  lndmk  = K.x1[Int64.(round.(linspace(1, size(K)[1], mrnk)))]
+  d2K    = KernelMatrices.KernelMatrix(K.x1, K.x2, K.parms, djk)
+  lndmk  = K.x1[Int64.(round.(LinRange(1, size(K)[1], mrnk)))]
   B      = map(nlf -> mapf(x->SBlock(nlfisub(d2K, x), djk, lndmk), nlf, nworkers(), plel), nlfi)
   return B
 end

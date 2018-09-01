@@ -10,9 +10,9 @@ function symmetricfactorize!(K::KernelHODLR{T}; plel::Bool=false, verbose::Bool=
   # Get the cholfact of each of the leaves, so that K.L[j] = W[j]*W[j]'. Then,
   # get the inverse of each of those symmetric factors.
   verbose && println("Computing factors for leaves...")
-  LW    = mapf(symfact, K.L,                 nwrk, plel)
-  LWf   = mapf(lufact,  LW,                  nwrk, plel)
-  LWtf  = mapf(lufact,  imap(transpose, LW), nwrk, plel)
+  LW    = mapf(symfact, K.L,             nwrk, plel)
+  LWf   = mapf(lu,  LW,                  nwrk, plel)
+  LWtf  = mapf(lu,  imap(transpose, LW), nwrk, plel)
 
   # Now, apply the leaf inverses blockwise to each of the U factors at all levels.
   verbose && println("Applying factor inverse to each non-leaf...")
@@ -21,7 +21,7 @@ function symmetricfactorize!(K::KernelHODLR{T}; plel::Bool=false, verbose::Bool=
   end
 
   # Declare the array for all the non-leaf symmetric factor terms:
-  nonleafW = Vector{Vector{LowRankW{T}}}(length(K.U))
+  nonleafW = Vector{Vector{LowRankW{T}}}(undef, length(K.U))
 
   # Now we loop down each level, using the low rank symmetric factorization
   # to get symmetric factors and then the Woodbury formula to apply it to all levels.

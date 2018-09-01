@@ -15,7 +15,7 @@ function saa_shuffle!(v::Vector{Vector{T}})::Nothing where{T<:Number}
 end
 
 function givesaa(len::Int64, sz::Int64)::Vector{Vector{Float64}}
-  vecs = map(x->Array{Float64}(sz), 1:len)
+  vecs = map(x->Array{Float64}(undef, sz), 1:len)
   saa_shuffle!(vecs)
   return vecs
 end
@@ -36,10 +36,10 @@ end
 
 # Must be of a Pos-Def Symmetric matrix!
 function symfact(A::Symmetric{T, Matrix{T}})::Matrix{T} where{T<:Number}
-  factd = eigfact(A)
-  Out   = factd[:vectors]
+  factd = eigen(A)
+  Out   = factd.vectors
   for j in 1:size(Out, 1)
-    @inbounds Out[:,j] .*= sqrt(factd[:values][j])
+    @inbounds Out[:,j] .*= sqrt(factd.values[j])
   end
   return Out
 end
@@ -47,7 +47,7 @@ end
 function Tmatrix(R1::Matrix{T}, R2::Matrix{T})::Symmetric{Float64} where{T<:Number}
   R1R2t = A_mul_Bt(R1, R2)
   sz    = size(R1R2t)[1]
-  Out   = Symmetric([eye(sz) R1R2t; transpose(R1R2t) eye(sz)])
+  Out   = Symmetric([Matrix(I, sz, sz) R1R2t; transpose(R1R2t) Matrix(I, sz, sz)])
   return Out
 end
 
@@ -56,17 +56,17 @@ function lrsymfact(U12::Matrix{T}, U21::Matrix{T})::LowRankW{T} where{T<:Number}
   Q1, R1 = qr(U12)
   Q2, R2 = qr(U21)
   X      = symfact(Tmatrix(R1, R2))-I
-  return LowRankW(cat([1,2], Q1, Q2), X)
+  return LowRankW(cat(Q1, Q2, dims=[1,2]), X)
 end
 
 function lrx_solterm(W::LowRankW{T}, v::Array{T}) where{T<:Number}
-  luf  = lufact!(W.X + I)
+  luf  = lu!(W.X + I)
   Xv   = W.X*v
   return Xv - W.X*(luf\Xv)
 end
 
 function lrx_solterm_t(W::LowRankW{T}, v::Array{T}) where{T<:Number}
-  luf  = lufact!(transpose(W.X) + I)
+  luf  = lu!(transpose(W.X) + I)
   Xv   = At_mul_B(W.X, v)
   return Xv - At_mul_B(W.X, (luf\Xv))
 end
@@ -89,9 +89,9 @@ function apply_block(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Mat
   szind      = transp ? 1 : 2
   inds       = cumsum(map(x->size(x)[szind], Wvec))
   inds[end] == size(A)[1] || error("The sizes for block-application don't work.")
-  unshift!(inds, 0)
+  pushfirst!(inds, 0)
   # Perform block application:
-  Out = Avecbol ? Array{T}(length(A)) : Array{T}(size(A))
+  Out = Avecbol ? Array{T}(undef, length(A)) : Array{T}(undef, size(A))
   if Avecbol
     for j in eachindex(Wvec)
       @inbounds strt     = inds[j]+1
@@ -141,10 +141,10 @@ function invapply!(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Matri
 end
 
 function DBlock(K::KernelMatrix{T}, dfun::Function, lndmks::AbstractVector)::DerivativeBlock{T} where{T<:Number}
-  K1p  = full(KernelMatrix{T}(K.x1, lndmks, K.parms, K.kernel))
-  Kp2  = full(KernelMatrix{T}(lndmks, K.x2, K.parms, K.kernel))
-  K1pd = full(KernelMatrix{T}(K.x1, lndmks, K.parms, dfun))
-  Kp2d = full(KernelMatrix{T}(lndmks, K.x2, K.parms, dfun))
+  K1p  = full(KernelMatrix(K.x1, lndmks, K.parms, K.kernel))
+  Kp2  = full(KernelMatrix(lndmks, K.x2, K.parms, K.kernel))
+  K1pd = full(KernelMatrix(K.x1, lndmks, K.parms, dfun))
+  Kp2d = full(KernelMatrix(lndmks, K.x2, K.parms, dfun))
   return DerivativeBlock(K1p, K1pd, Kp2, Kp2d)
 end
 
@@ -174,8 +174,8 @@ end
 
 function SBlock(K::KernelMatrix{T}, djk::Function, 
                 lndmks::AbstractVector)::SecondDerivativeBlock{T} where{T<:Number}
-  K1pdk = full(KernelMatrix{T}(K.x1, lndmks, K.parms, djk))
-  Kp2dk = full(KernelMatrix{T}(lndmks, K.x2, K.parms, djk))
+  K1pdk = full(KernelMatrix(K.x1, lndmks, K.parms, djk))
+  Kp2dk = full(KernelMatrix(lndmks, K.x2, K.parms, djk))
   return SecondDerivativeBlock(K1pdk, Kp2dk)
 end
 

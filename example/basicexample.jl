@@ -1,5 +1,5 @@
 
-using KernelMatrices, StaticArrays, NearestNeighbors
+using Distributed, LinearAlgebra, KernelMatrices, StaticArrays, NearestNeighbors
 
 # Get the points, so that K[i,j] = kernfun(pts[i], pts[k], parms):
 dim      = 2
