@@ -53,8 +53,10 @@ end
 
 function lrsymfact(U12::Matrix{T}, U21::Matrix{T})::LowRankW{T} where{T<:Number}
   sz     = size(U12)[2]
-  Q1, R1 = qr(U12)
-  Q2, R2 = qr(U21)
+  qr12   = qrfact!(U12)
+  qr21   = qrfact!(U21)
+  Q1, R1 = Array(qr12.Q), qr12.R
+  Q2, R2 = Array(qr21.Q), qr21.R
   X      = symfact(Tmatrix(R1, R2))-I
   return LowRankW(cat(Q1, Q2, dims=[1,2]), X)
 end
