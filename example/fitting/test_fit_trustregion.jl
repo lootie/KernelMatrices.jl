@@ -28,7 +28,7 @@ popts = HODLR.Maxlikopts(
   kernfun,                # Kernel function
   dfuns,                  # derivative functions
   0.0,                    # The pointwise precision for the off-diagonal blocks. Not used for Nystrom method.
-  0  ,                    # The number of dyadic splits of the matrix dimensions. 0 leads to default value.
+  HODLR.LogLevel(8),      # The number of dyadic splits of the matrix dimensions, set here to log2(n) - 8.
   72 ,                    # The fixed rank of the off-diagonal blocks, with 0 meaning no maximum allowed rank.
   HODLR.givesaa(35, nsz), # SAA vectors.
   true,                   # Parallel flag for assembly, which is safe and very beneficial

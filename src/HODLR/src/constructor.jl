@@ -2,11 +2,11 @@
 # The constructor for the HODLR matrix given a KernelMatrix struct. If you nystrom=false, the blocks
 # are assembled with the ACA up to tolerance ep or rank maxrank (if maxrank>0, otherwise no limit on
 # the permitted rank). If nystrom=true, assembles blocks using the Nystrom approximation.
-function KernelHODLR(K::KernelMatrix{T}, ep::Float64=1.0e-10, maxrank::Int64=0, level::Int64=0;
+function KernelHODLR(K::KernelMatrix{T}, ep::Float64, maxrank::Int64, lvl::HierLevel;
                      nystrom::Bool=false, plel::Bool=false)::KernelHODLR{T} where{T<:Number}
 
   # Get the level, leaf indices, and non-leaf indices:
-  level, leafinds, nonleafinds = HODLRindices(size(K)[1], level)
+  level, leafinds, nonleafinds = HODLRindices(size(K)[1], lvl)
   nwrk                         = nworkers()
 
   # If the Nystrom method was requested, prepare that:

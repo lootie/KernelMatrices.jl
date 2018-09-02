@@ -18,7 +18,7 @@ end
 Random.seed!(12345)
 
 # Set some HODLR options:
-opts = HODLR.Maxlikopts(kernfun,dfuns,0.0,0,64,HODLR.givesaa(35, 2^12),false,false,false,true)
+opts = HODLR.Maxlikopts(kernfun,dfuns,0.0,HODLR.LogLevel(8),64,HODLR.givesaa(35, 2^12),false,false,false,true)
 
 # Choose the size of the data and its true parameters:
 nsz      = 2^12

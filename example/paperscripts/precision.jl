@@ -37,7 +37,7 @@ apx_hes_mle  = Matrix{Matrix{Float64}}(nrept, length(powers))
 apx_fsh_mle  = Matrix{Matrix{Float64}}(nrept, length(powers))
 
 # Get the options in place:
-opts = HODLR.Maxlikopts(kernfun,dfuns,0.0,0,72,HODLR.givesaa(35, 5), true, true, false, true)
+opts = HODLR.Maxlikopts(kernfun,dfuns,0.0,HODLR.LogLevel(8),72,HODLR.givesaa(35, 5), true, true, false, true)
 
 # Loop across, estimating/computing exactly for powers 2^j:
 for (j, jpow) in enumerate(powers)

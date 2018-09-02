@@ -40,7 +40,8 @@ for r in eachindex(ranks)
   for (j, jpow) in enumerate(powers)
     println("Working on size 2^$jpow...")
     # Generate opts that have the appropriate rank and SAA size:
-    opts  = HODLR.Maxlikopts(kernfun,dfuns,0.0,0,ranks[r],HODLR.givesaa(35, 2^jpow), true, true, false, true)
+    opts  = HODLR.Maxlikopts(kernfun,dfuns,0.0,HODLR.LogLevel(8),ranks[r],
+                             HODLR.givesaa(35, 2^jpow), true, true, false, true)
     # Simulate that much data, without exact simulating because it doesn't matter here:
     pts   = map(x->StaticArrays.SVector{2, Float64}(rand(2).*100.0), 1:(2^jpow))
     simdd = HODLR.gpsimulate(pts, trup, opts, exact=false, kdtreesort=true)

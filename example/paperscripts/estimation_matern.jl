@@ -19,15 +19,15 @@ Random.seed!(27182)
 end
 
 # Set some HODLR options:
-hutchn    = 35
-popts     = HODLR.Maxlikopts(kernfun, dfuns, 0.0,0,72,HODLR.givesaa(hutchn,5),true,true,false,true)
-fopts     = HODLR.Maxlikopts(fkernfun,fdfuns,0.0,0,72,HODLR.givesaa(hutchn,5),true,true,false,true)
+hutchn  = 35
+popts   = HODLR.Maxlikopts(kernfun, dfuns, 0.0,HODLR.LogLevel(8),72,HODLR.givesaa(hutchn,5),true,true,false,true)
+fopts   = HODLR.Maxlikopts(fkernfun,fdfuns,0.0,HODLR.LogLevel(8),72,HODLR.givesaa(hutchn,5),true,true,false,true)
 
 # Declare the sizes to fit:
-nrep      = 5
-j_range   = 11:17
-bigsz     = 2^j_range[end]
-totlen    = length(j_range)
+nrep    = 5
+j_range = 11:17
+bigsz   = 2^j_range[end]
+totlen  = length(j_range)
 
 # Loop over the two scenarios;
 for fnm in ["bigrange", "smallrange"]

@@ -26,27 +26,23 @@ function symmetricfactorize!(K::KernelHODLR{T}; plel::Bool=false, verbose::Bool=
   # Now we loop down each level, using the low rank symmetric factorization
   # to get symmetric factors and then the Woodbury formula to apply it to all levels.
   for lv in 1:length(K.U)
-
     # Get the low-rank symmetric factors for this level.
     verbose && println("Factoring level $lv of non-leaves...")
     tmpW   = mapf(x->lrsymfact(x[1], x[2]), zip(K.V[lv], K.U[lv]), nwrk, plel)
-
     # Apply their inverse to all the lower levels.
     verbose && println("Applying level $lv of non-leaf inverses to each non-leaf...")
       for lev in (lv+1):length(K.U)
         invapply!(tmpW, lev, K.U, K.V, false)
       end
-
     # Push tmpW onto nonleafW.
     nonleafW[lv] = tmpW
-
   end
   
   # Put it in place:
   K.W = FactorHODLR{T}(LW, LWf, LWtf, nonleafW)
 
   # Ditch the U, V, as they have been overwritten and are no longer helpful.
-  verbose && warn("U and V abandoned after overwriting")
+  verbose && @warn("U and V abandoned after overwriting")
   K.U = nothing
   K.V = nothing
 

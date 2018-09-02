@@ -22,7 +22,7 @@ end
 # Declare various options for the test:
 tryp     = [3.0, 40.0, 1.2]
 psz      = 2^12
-opts     = HODLR.Maxlikopts(kfun, dfns, 0.0, 0, 72, HODLR.givesaa(1, psz), false, false, false, false)
+opts     = HODLR.Maxlikopts(kfun,dfns,0.0,HODLR.LogLevel(8),72,HODLR.givesaa(1,psz),false,false,false,false)
 hutchN   = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100]
 sampleN  = 50
 

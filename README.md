@@ -24,7 +24,7 @@ be used to achieve quasilinear complexity in matvecs, linear solves, and log-det
 For a brief whirlwind tour, here is a heavily commented example that builds these objects. In the
 `./examples/` directory, you will find similar files that you can run and mess with.
 ```julia
-using KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors
+using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors
 
 # Choose the number of locations:
 n    = 1024
@@ -65,14 +65,14 @@ you the syntax for both here, although they are very similar.
 ```julia
 # For the ACA, you need to choose:
   # A relative preocision for the off-diagonal block approximation (tol),
-  # An optional fixed level (lvl),
+  # A fixed level (lvl),
   # An optional fixed maximum rank (rnk),
   # A parallel assembly option (pll).
-tol  = 1.0e-12  # This flag works how you'd expect.
-lvl  = 0        # an lvl value of 0 sets the level as log2(n)-8. You need the level to grows as
-                # O(log(n)) for quasilinear complexity. See the paper for details.
-rnk  = 0        # If set to 0, no fixed max rank. Otherwise, this arg works as you'd expect.
-pll  = false    # This flag also works how you'd expect.
+tol  = 1.0e-12            # This flag works how you'd expect.
+lvl  = HODLR.LogLevel(8)  # For the quasilinear complexity, the level needs to grow with log(n).
+                          # This argument sets the level at log2(n)-8. HODLR.FixedLevel(k) also exists. 
+rnk  = 0                  # If set to 0, no fixed max rank. Otherwise, this arg works as you'd expect.
+pll  = false              # This flag determines whether assembly of the matrix is done in parallel.
 HK_a = HODLR.KernelHODLR(K, tol, lvl, rnk, nystrom=false, plel=pll)
 
 # For the Nystrom approximation, you need to choose:
@@ -92,6 +92,10 @@ HODLR.symmetricfactorize!(HK_n, plel=pll)
 # Now, you can compute your linear solves with HK_n\vec and logdets with logdet(HK_n).
 ```
 
+As a reminder, if you want to do things in on-node parallel, start julia with multiple processes
+with `julia -p $k` for k many processes. If you just start the REPL or run something with `julia
+...`, then you won't really benefit from using the parallel flag.
+
 Finally, this software packages provides more specialized functionally for Gaussian process
 computing. See the paper for details on this, but an approximated Gaussian log-likelihood with a
 stochastic gradient, Hessian, and expected Fisher information matrix is also provided. All of these
@@ -108,16 +112,21 @@ complete and heavily commented scripts demonstrating how to do that.
 release. Version 0.1 is the exact source code used for the corresponding manuscript. Version 0.2 is
 the most recent release, and requires julia version >=0.7.**
 
+If you are looking to recreate results from the paper, please use the code from v0.1. Version 0.2
+has substantial modifications, and I can't promise that it could be used to reproduce the results of
+the manuscript. I don't see why it wouldn't, and I have left the specific code to generate the results
+of the papers in `examples/paperscripts`, but only because they provide more usage examples.
+
 All of the code in this repository is defined in a module, which is most easily used the way you
 would use an official julia package. To faciliate that, I suggest adding the directory to your
 LOAD_PATH, which can most easily be done by adding
 ```julia
 push!(LOAD_PATH, "/path/to/the/src/directory/")
 ```
-to your `.juliarc.jl` file. Alternatively, you could symlink this repository to your `~/.julia`
-directory like this:
+to your `~/.julia/config/startup.jl` file. Alternatively, you could symlink this repository to your
+`~/.julia` directory like this:
 ```
-$ ln -s /path/to/this/repo/ /path/to/.julia/v0.6/KernelMatrices
+$ ln -s /path/to/this/repo/ /path/to/.julia/packages/KernelMatrices
 ```
 Lately, though, I have gotten annoyed with some behavior this makes the package manager do. I suggest
 the first alternative.
@@ -125,6 +134,7 @@ the first alternative.
 You will need to install a few packages that are listed in the REQUIRE file, which can easily be done
 with 
 ```julia
+julia> using Pkg
 julia> Pkg.add.(["StaticArrays", "IterTools", "GeometricalPredicates", "NearestNeighbors"])
 ```
 None of those requirements are substantial or require any special care. If it all works, you will see
@@ -139,26 +149,13 @@ julia> using KernelMatrices, KernelMatrices.HODLR
 with `KernelMatrices.foo()`, or `HODLR.foo()`, or `KernelMatrices.HODLR.foo()` if you do not bring
 the module `HODLR` into the namespace with `using KernelMatrices.HODLR`.**
 
-**This code was written for Julia version `0.6.*`.**
-
 
 # Changes to expect in the next release
 
-1. **Updating the software to be compatible with julia `1.0.0` and beyond.** I have not done
-   that now because I want to be careful to have an official release that is exactly the software I
-   used for the corresponding submitted paper.
-
-2. **Change the behavior of the level option.** As of now, giving a level of `0` gives what I
-   consider to be the most sensible default behavior. But annoying, it means that giving a level of
-   `k` really means your matrix will be of level `k-1` in the notation of the paper, so that a level
-   of `1` will be an exact matrix. Again, I did not change this already because I only realized I had 
-   written it in that awkward way after the official paper results had all been computed. But for 
-   future releases, please expect different (and more reasonable) behavior for this arg.
-
-3. **Small performance improvements.** In general, the code tries to be both fast and
+1. **Small performance improvements.** In general, the code tries to be both fast and
    pedagogical. After this release, I am going to think more excluisvely about being fast.
 
-4. **Small readability improvements.** Some of this code was written well over a year ago, and I
+2. **Small readability improvements.** Some of this code was written well over a year ago, and I
    think I've gotten better at writing ergonomic and readable code. Again, in the interest of being
    sure that I'm releasing code that corresponds exactly to the results shown in the paper, I have
    not gone in and improved little guts in the code base. But in the next release, I will do that.

@@ -19,16 +19,16 @@ Random.seed!(12345)
 
 # Set some HODLR options:
 opts = HODLR.Maxlikopts(
-  kernfun,         # Kernel function
-  dfuns,           # derivative functions
-  0.0,             # The pointwise precision for the off-diagonal blocks. Not used for Nystrom method.
-  0  ,             # The number of dyadic splits of the matrix dimensions. 0 leads to default value.
-  64 ,             # The fixed rank of the off-diagonal blocks, with 0 meaning no maximum allowed rank.
-  35 ,             # The number of symmetric bernoulli vectors used for stochastic estimates.
-  false,           # Parallel flag for assembly, which is safe and very beneficial
-  false,           # Parallel flag for factorization, which is less safe and beneficial.
-  false,           # Verbose flag to see optimization path and fine-grained times
-  0                # Seed for the random sample vecs. 
+  kernfun,           # Kernel function
+  dfuns,             # derivative functions
+  0.0,               # The pointwise precision for the off-diagonal blocks. Not used for Nystrom method.
+  HODLR.LogLevel(8), # The number of dyadic splits of the matrix dimensions. 0 leads to default value.
+  64 ,               # The fixed rank of the off-diagonal blocks, with 0 meaning no maximum allowed rank.
+  35 ,               # The number of symmetric bernoulli vectors used for stochastic estimates.
+  false,             # Parallel flag for assembly, which is safe and very beneficial
+  false,             # Parallel flag for factorization, which is less safe and beneficial.
+  false,             # Verbose flag to see optimization path and fine-grained times
+  0                  # Seed for the random sample vecs. 
 )
 
 # Choose the size of the data and its true parameters:

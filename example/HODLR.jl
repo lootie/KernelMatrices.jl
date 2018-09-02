@@ -6,23 +6,16 @@ include("basicexample.jl")
 using  KernelMatrices.HODLR
 
 # Assemble the HODLR matrix:
-vrbs    = false    # Verbose flag:  Show timing?
-plel    = false    # Parallel flag: Do the operation in parallel?
-maxrank = 72       # max rank:      Fix the maximum rank of the off-diagonal blocks? If no, give 0.
-tol     = 1.0e-8   # tolerance:     If doing the ACA, terminate the partial factorization at this tol.
-lvl     = 0        # level:         The number of dydic splits of the matrix. 0 leads to the default
-                   #                value of log2(n) - 8. Due to how this is presently coded,
-                   #                though, if you were going to supply it by hand, you should give
-                   #                it log2(n) - 7.
-                   #                !!!
-                   #                IN GENERAL, IF YOU WANT TO SPECIFY A LEVEL K, PLEASE SUPPLY K+1
-                   #                TO THIS ARGUMENT.  
-                   #                !!!
-                   #                So, supplying the number 1 will give you an exact matrix,
-                   #                corresponding to a level 0. In a future release that isn't tied
-                   #                to a submitted paper, I will fix this behavior to be more
-                   #                intuitive.
-
+vrbs    = false              # Verbose flag:  Show timing?
+plel    = false              # Parallel flag: Do the operation in parallel?
+maxrank = 72                 # max rank:      Fix the maximum rank of the off-diagonal blocks? If no, give 0.
+tol     = 1.0e-8             # tolerance:     If doing the ACA, terminate the partial factorization at this tol.
+                             #                This argument is still necessary for nystrom=true, but
+                             #                it doesn't do anything.
+lvl     = HODLR.LogLevel(8)  # level:         The number of dydic splits of the matrix. If you want to fix it
+                             #                at a certain level k, use HODLR.FixedLevel(k). This will not
+                             #                scale with the complexity you want, though, so instead have the
+                             #                level grow with log2(n) - k by providing HODLR.LogLevel(k).
 
 
 # Here are sample function calls to the constructor HODLR.KernelHODLR which showcase the different

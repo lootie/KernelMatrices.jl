@@ -1,19 +1,17 @@
 
 # Get the leaf sizes. The leaves will have sizes between fix_level and 2*fix_level. If fix_level
 # isn't valid, it will be adjusted, sometimes without warning.
-function _leafsizes(N::Int64, fix_level::Int64=0, base::Int64=2)::Tuple{Int64, Vector{Int64}}
-  n       = Int64(floor(log(base, N)))
-  if fix_level > 0 && fix_level <= n
-    n     = fix_level
-  elseif fix_level > 0 && fix_level > n
-    warn("You can't have the level that you requested, dropping down to highest permissible.")
+function _leafsizes(N::Int64, lvl::HierLevel)::Tuple{Int64, Vector{Int64}}
+  if typeof(lvl) == FixedLevel
+    n = min(max(0, lvl.lv), Int64(floor(log2(N))))
   else
-    n     = max(n-7, 1) # This actually corresponds to log2(n) - 8.
+    lvl.lv >= 0 || error("Please provide a positive value for the level offset.")
+    n = min(max(0, Int64(floor(log2(N))) - lvl.lv), Int64(floor(log2(N))))
   end
-  leafszs = base*ones(base^(n-1))
-  remandr = N-base^n
+  leafszs = ones(2^n)*Int64(floor(N/(2^n)))
+  remandr = N-sum(leafszs)
   while remandr > 0
-    for j in 1:base^(n-1)
+    for j in eachindex(leafszs)
       leafszs[j] += 1
       remandr    -= 1
       if remandr == 0
@@ -53,10 +51,10 @@ end
 
 # Putting it all together, give this function an N and get the
 # indices of every HODLR node.
-function HODLRindices(N::Int64, kmax::Int64=0)::Tuple{Int64, 
-                                                      Vector{SVector{4, Int64}}, 
-                                                      Vector{Vector{SVector{4, Int64}}}}
-  lv, lfszs = _leafsizes(N, kmax)
+function HODLRindices(N::Int64, lvl::HierLevel)::Tuple{Int64, 
+                                                       Vector{SVector{4, Int64}}, 
+                                                       Vector{Vector{SVector{4, Int64}}}}
+  lv, lfszs = _leafsizes(N, lvl)
   lfind     = _leafindices(lfszs)
   nonlfind  = [_nextlevel(lfind, 1)]
   for j in 2:(lv-1)
