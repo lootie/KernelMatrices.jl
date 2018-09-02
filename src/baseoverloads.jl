@@ -32,7 +32,7 @@ function getKernelMatrixblock(M::KernelMatrix{T}, startj::Int, endj::Int,
   return Out
 end
 
-function Base.full(M::KernelMatrix{T})::Matrix{T} where{T<:Number}
+function full(M::KernelMatrix{T})::Matrix{T} where{T<:Number}
   n, m = size(M)
   return getKernelMatrixblock(M, 1, n, 1, m)
 end
@@ -78,7 +78,7 @@ function Base.getindex(M::KernelMatrix{T}, ::Colon, k::Int64)::Vector{T} where{T
   return out
 end
 
-function LinearAlgebra.A_mul_B!(dest::StridedVector, M::KernelMatrix{T}, src::StridedVector) where{T<:Number}
+function LinearAlgebra.mul!(dest::StridedVector, M::KernelMatrix{T}, src::StridedVector) where{T<:Number}
   sl              = length(src)
   dl              = length(dest)
   sl == size(M)[2] || error("Matrix and Vector sizes do not agree.")
@@ -91,33 +91,7 @@ function LinearAlgebra.A_mul_B!(dest::StridedVector, M::KernelMatrix{T}, src::St
   return dest
 end
 
-function LinearAlgebra.At_mul_B!(dest::StridedVector, M::KernelMatrix{T}, src::StridedVector) where{T<:Number}
-  sl              = length(src)
-  dl              = length(dest)
-  sl == size(M)[1] || error("Matrix and Vector sizes do not agree.")
-  dl == size(M)[2] || error("Destination and matrix sizes do not agree.")
-  coll = Array{eltype(src)}(undef, sl)
-  for j in eachindex(dest)
-    fillcol!(coll, M, j)
-    @inbounds dest[j] = dot(coll, src)
-  end
-  return dest
-end
-
-function LinearAlgebra.Ac_mul_B!(dest::StridedVector, M::KernelMatrix{T}, src::StridedVector) where{T<:Number}
-  sl              = length(src)
-  dl              = length(dest)
-  sl == size(M)[1] || error("Matrix and Vector sizes do not agree.")
-  dl == size(M)[2] || error("Destination and matrix sizes do not agree.")
-  coll = Array{eltype(src)}(undef, sl)
-  for j in eachindex(dest)
-    fillcol!(coll, M, j)
-    @inbounds dest[j] = dot(conj(coll), src)
-  end
-  return dest
-end
-
-function LinearAlgebra.A_mul_B!(dest::StridedMatrix, M::KernelMatrix{T}, src::StridedMatrix) where{T<:Number}
+function LinearAlgebra.mul!(dest::StridedMatrix, M::KernelMatrix{T}, src::StridedMatrix) where{T<:Number}
   size(dest) == size(src) || error("Your target and destination sources don't agree in size")
   nrow = size(M, 1)
   ncol = size(src, 2)
@@ -131,44 +105,15 @@ function LinearAlgebra.A_mul_B!(dest::StridedMatrix, M::KernelMatrix{T}, src::St
   return dest
 end
 
-function LinearAlgebra.At_mul_B!(dest::StridedMatrix, M::KernelMatrix{T}, src::StridedMatrix) where{T<:Number}
-  size(dest) == size(src) || error("Your target and destination sources don't agree in size")
-  mncol = size(M, 2)
-  ncol  = size(src, 2)
-  coll = Array{eltype(M)}(undef, size(M, 1))
-  for j in 1:mncol
-    fillcol!(coll, M, j)
-    for k in 1:ncol
-      @inbounds dest[j,k] = dot(coll, src[:,k])
-    end
-  end
-  return dest
-end
-
-function LinearAlgebra.Ac_mul_B!(dest::StridedMatrix, M::KernelMatrix{T}, src::StridedMatrix) where{T<:Number}
-  size(dest) == size(src) || error("Your target and destination sources don't agree in size")
-  mncol = size(M, 2)
-  ncol  = size(src, 2)
-  coll = Array{eltype(M)}(undef, size(M, 1))
-  for j in 1:mncol
-    fillcol!(coll, M, j)
-    conj!(coll)
-    for k in 1:ncol
-      @inbounds dest[j,k] = dot(coll, src[:,k])
-    end
-  end
-  return dest
-end
-
 function LinearAlgebra.:*(M::KernelMatrix{T}, x::Vector{T})::Vector{T} where{T<:Number}
   out = Array{eltype(x)}(undef, length(x))
-  A_mul_B!(out, M, x)
+  mul!(out, M, x)
   return out
 end
 
 function LinearAlgebra.:*(M::KernelMatrix{T}, x::Matrix{T})::Matrix{T} where{T<:Number}
   out = Array{eltype(x)}(undef, size(x))
-  A_mul_B!(out, M, x)
+  mul!(out, M, x)
   return out
 end
 
@@ -185,12 +130,11 @@ function LinearAlgebra.diag(M::KernelMatrix{T}, simple::Bool=false)::Vector{T} w
   return out
 end
 
-function Base.full(L::IncompleteCholesky{T})::Matrix{T} where{T<:Number}
+function full(L::IncompleteCholesky{T})::Matrix{T} where{T<:Number}
   Out = L.L[:,1] * L.L[:,1]'
   for j in 2:size(L.L,2)
     Out += L.L[:,j] * L.L[:,j]'
   end
   return Out
 end
-
 

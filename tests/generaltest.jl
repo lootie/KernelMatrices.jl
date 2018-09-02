@@ -11,16 +11,16 @@ N < 2^11 || error("This script is for testing on small matrices only.")
 
 # Set a few method parameters:
 mrnk = 72
-lvl  = 0
+lvl  = HODLR.LogLevel(8)
 tvec = randn(N)
 tmp1 = zeros(N)
 tmp2 = zeros(N)
 
 # Assemble the HODLR matrix, factorize it, get full for comparison:
 HK   = HODLR.KernelHODLR(K, eps(), mrnk, lvl, nystrom=true)
-HKf  = full(HK)
+HKf  = HODLR.full(HK)
 HODLR.symmetricfactorize!(HK, verbose=false)
-W    = full(HK.W)
+W    = HODLR.full(HK.W)
 
 # Equality of symmetric factors:
 @test isapprox(W*W', HKf)

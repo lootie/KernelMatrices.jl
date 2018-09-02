@@ -115,7 +115,9 @@ the most recent release, and requires julia version >=0.7.**
 If you are looking to recreate results from the paper, please use the code from v0.1. Version 0.2
 has substantial modifications, and I can't promise that it could be used to reproduce the results of
 the manuscript. I don't see why it wouldn't, and I have left the specific code to generate the results
-of the papers in `examples/paperscripts`, but only because they provide more usage examples.
+of the papers in `examples/paperscripts`, but only because they provide more usage examples. While I
+have attempted to modify the code for versions beyond 0.1, I can't even promise that they run.
+Whatever problems they have in subsequent versions should be easy fixes, though.
 
 All of the code in this repository is defined in a module, which is most easily used the way you
 would use an official julia package. To faciliate that, I suggest adding the directory to your
@@ -135,7 +137,7 @@ You will need to install a few packages that are listed in the REQUIRE file, whi
 with 
 ```julia
 julia> using Pkg
-julia> Pkg.add.(["StaticArrays", "IterTools", "GeometricalPredicates", "NearestNeighbors"])
+julia> Pkg.add.(["StaticArrays", "IterTools", "NearestNeighbors"])
 ```
 None of those requirements are substantial or require any special care. If it all works, you will see
 (at the time of writing, at least) the word `nothing` printed four times.

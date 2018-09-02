@@ -62,6 +62,7 @@ ftol_rel!(opt, 1.0e-5)
 @time (minf, minx, ret) = optimize(opt, inits)
 
 # Compute the stochastic Hessian at the estimated MLE:
+println()
 println("Stochastic hessian estimate at MLE took this much time:")
 @time hess = HODLR.nll_hessian(minx, loc_s, dat_s, opts, d2funs)
 mle_er     = sqrt.(diag(inv(hess))).*1.96

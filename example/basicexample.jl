@@ -8,9 +8,8 @@ N        = 2^10
 pts      = map(x->StaticArrays.MVector{dim, Float64}(rand(dim).*scal), 1:N)
 
 # Decide how to sort them, if any way (this is more relevant for the HODLR use case):
-psorted  = KernelMatrices.hilbertsort(pts)      # Hilbert sort
-#psorted  = NearestNeighbors.KDTree(pts).data   # K-D tree sort
-#psorted  = pts                                 # no sort
+psorted  = NearestNeighbors.KDTree(pts).data   # K-D tree sort
+#psorted = pts                                 # no sort
 
 # Choose a kernel function, which I define @everywhere in case you want to parallelize in HODLR.jl:
 @everywhere function kernfun(x1::AbstractVector, x2::AbstractVector, parms::AbstractVector)

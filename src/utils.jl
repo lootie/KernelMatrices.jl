@@ -59,22 +59,6 @@ function shiftpts(v::Vector, coordmin::Float64=1.0, coordmax::Float64=2.0)::Vect
  return sv
 end
 
-function hilbertsort(v::Vector)::Vector
-  if typeof(v[1]) == Float64
-    return sort(v)
-  else
-    ptd = length(v[1])
-    if unique(length.(v)) != [ptd] || !issubset(ptd, [2,3])
-      error("Can only handle points in 2- or 3-dimensional space at the moment.")
-    end
-    shfd = shiftpts(v)
-    pts  = map(x->GeometricalPredicates.Point(x...), shfd)
-    ptss = deepcopy(pts)
-    GeometricalPredicates.hilbertsort!(ptss)
-    return v[getsortperm(pts, ptss)]
-  end
-end
-
 function submatrix(K::KernelMatrix{T}, startj::Int64, stopj::Int64, 
                    startk::Int64, stopk::Int64)::KernelMatrix{T} where{T<:Number}
   return KernelMatrix(view(K.x1, startj:stopj), view(K.x2, startk:stopk), K.parms, K.kernel)

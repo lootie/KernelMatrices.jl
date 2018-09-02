@@ -18,7 +18,7 @@ function Base.size(W::LowRankW{T}, j::Int64)::Int64 where{T<:Number}
   return ifelse(j==1, size(W.M,1), size(W.M,2))
 end
 
-function Base.full(M::LowRankW{T})::Matrix{T} where{T<:Number}
+function full(M::LowRankW{T})::Matrix{T} where{T<:Number}
   return I + mul_t(M.M*M.X, M.M)
 end
 
@@ -26,7 +26,7 @@ function LinearAlgebra.det(W::LowRankW{T})::Float64 where{T<:Number}
   return det(I + t_mul(W.M, W.M)*W.X)
 end
 
-function Base.full(K::KernelHODLR{T})::Matrix{T} where{T<:Number}
+function full(K::KernelHODLR{T})::Matrix{T} where{T<:Number}
   Out = Array{T}(undef, size(K))
   for (j,pt) in enumerate(K.leafindices)
     Out[pt[1]:pt[2], pt[3]:pt[4]] = K.L[j]
@@ -42,7 +42,7 @@ function Base.full(K::KernelHODLR{T})::Matrix{T} where{T<:Number}
 end
 
 # VERY computationally inefficient. This really is only for testing.
-function Base.full(W::FactorHODLR{T})::Matrix{T} where{T<:Number}
+function full(W::FactorHODLR{T})::Matrix{T} where{T<:Number}
   Out = cat(W.leafW..., dims=[1,2])
   # Multiply the nonleaves:
   for j in 1:length(W.nonleafW)
@@ -225,7 +225,7 @@ function Base.size(DK::DerivativeHODLR{T})::Tuple{Int64, Int64} where{T<:Number}
   return sz, sz
 end
 
-function Base.full(DK::DerivativeHODLR{T})::Matrix{T} where{T<:Number}
+function full(DK::DerivativeHODLR{T})::Matrix{T} where{T<:Number}
   Out = zeros(T, size(DK))
   for (j,pt) in enumerate(DK.leafindices)
     Out[pt[1]:pt[2], pt[3]:pt[4]] = DK.L[j]
