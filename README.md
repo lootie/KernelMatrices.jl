@@ -15,7 +15,7 @@ for the KernelMatrix struct, so that once you create the lightweight KernelMatri
 julia> K = KernelMatrices.KernelMatrix(xpts, ypts, kernel_parameters, kernel_function)
 ```
 you can access the (i,j)-th element of that matrix with `K[i,j]`, the j-th column or row with
-`K[:,j]` and `K[j,:]`, get the full matrix with `full(K)`. 
+`K[:,j]` and `K[j,:]`, get the full matrix with `KernelMatrices.full(K)`. 
 
 To accelerate linear algebra, this software package implements the Hierarchically Off-Diagonal
 Low-Rank (HODLR) matrix structure originally introduced in Ambikasaran and Darve (2013), which can
@@ -32,7 +32,7 @@ n    = 1024
 # For the example, randomly generate some locations in the form of a Vector{SVector{2, Float64}}.
 # You don't need to use an SVector here---there are no restrictions beyond the locations being a
 # subtype of AbstractVector. I just use StaticArrays for a little performance boost.
-locs = map(x->SVector{2, Float64}(randn(2)), 1:n)
+locs = [SVector{2, Float64}(randn(2)) for _ in 1:n]
 
 # Declare a kernel function with this specific signature. If you want to use the HODLR matrix
 # format, this function needs to be positive definite. It absolutely does NOT need a nugget-like
@@ -87,10 +87,12 @@ of `HK_a` that the rank of the off-diagonal blocks is O(log n) or less. If you w
 solves and logdets in that complexity as well, you will need to compute the symmetric factorization.
 
 Assuming that the output HODLR matrix is positive definite, you can factorize the matrix easily.
-This function modifies the struct internally, so this is all you need to do.
-HODLR.symmetricfactorize!(HK_n, plel=pll)
+This function modifies the struct internally, so this is all you need to do:
 
-Now, you can compute your linear solves with HK_n\vec and logdets with logdet(HK_n).
+```julia
+HODLR.symmetricfactorize!(HK_n, plel=pll)
+```
+Now you can compute your linear solves with `HK_n\vec` and logdets with `logdet(HK_n)`.
 
 As a reminder, if you want to do things in on-node parallel, start julia with multiple processes
 with `julia -p $k` for k many processes. If you just start the REPL or run something with `julia
@@ -114,7 +116,7 @@ manuscript.** To re-create results and figures from the paper, look in the direc
 `./examples/paperscripts/` and `./examples/paperscripts/figures/` respectively.
 
 **If you want to re-compute results from the paper and then potentially re-create the figures,
-please run the files from the directory the are located in. All of them use relative paths for
+please run the files from the directory they are located in. All of them use relative paths for
 output storage.**
 
 All of the code in this repository is defined in a module, which is most easily used the way you
