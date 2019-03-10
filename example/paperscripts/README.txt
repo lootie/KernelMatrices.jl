@@ -1,9 +1,9 @@
 
 These are the exact scripts used to generate the various results/benchmarks in the paper
-corresponding with the release of this software suite.
+corresponding with the release of this software suite. 
 
-Other than changing the path pointing to the relevant JLD files, you should not need to alter any of
-the script to get the exact numerical results that we produce in the paper. 
+Other than creating a data directory in the root level of this repo, you should not need to alter
+any of the script to get the exact numerical results that we produce in the paper. 
 
 For the sake of brevity, I used less verbose declarations of the boilerplate than I do in
 ../fitting/test_fit_*.jl. If some of the declarations aren't clear, like the HODLR.Maxlikopts(...)

@@ -130,11 +130,3 @@ function LinearAlgebra.diag(M::KernelMatrix{T}, simple::Bool=false)::Vector{T} w
   return out
 end
 
-function full(L::IncompleteCholesky{T})::Matrix{T} where{T<:Number}
-  Out = L.L[:,1] * L.L[:,1]'
-  for j in 2:size(L.L,2)
-    Out += L.L[:,j] * L.L[:,j]'
-  end
-  return Out
-end
-

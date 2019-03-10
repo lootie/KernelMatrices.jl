@@ -11,8 +11,8 @@ Random.seed!(27182)
   include("../fitting/generic_exact_functions.jl")
   include("../fitting/fitting_funs.jl")
   kernfun   = ps1_kernfun
-  dfuns     = Vector{Function}(1) ; dfuns[1] = ps1_kernfun_d2
-  d2f       = Vector{Function}(1) ; d2f[1]   = ps1_kernfun_d2_d2
+  dfuns     = Vector{Function}(undef, 1) ; dfuns[1] = ps1_kernfun_d2
+  d2f       = Vector{Function}(undef, 1) ; d2f[1]   = ps1_kernfun_d2_d2
   d2funs    = [d2f]
   fkernfun  = sm1_kernfun
   fdfuns    = [sm1_kernfun_d1, sm1_kernfun_d2]
@@ -33,21 +33,23 @@ totlen  = length(j_range)
 for fnm in ["bigrange", "smallrange"]
   
   # Load in the data file, get the true parameters and initial values for optimization:
-  datafile  = load("/path/to/matern_simulation_" * fnm * ".jld")
+  datafile  = load("../../data/matern_simulation_" * fnm * ".jld")
   trup      = datafile["stein_true"]
   pinit     = [trup[2]*0.8] # 20% in magnitude away from the true value.
   println()
 
   # Allocate the arrays to store things:
-  exact_fit = Matrix{Vector{Float64}}(totlen,nrep)
+  exact_fit = Matrix{Vector{Float64}}(undef, totlen,nrep)
   exact_nll = zeros(Float64, totlen, nrep)
-  exact_hes = Matrix{Matrix{Float64}}(totlen, nrep)
+  exact_hes = Matrix{Matrix{Float64}}(undef, totlen, nrep)
   exact_nlt = zeros(Float64, totlen, nrep)
   exact_hlt = zeros(Float64, totlen, nrep)
-  hodlr_fit = Matrix{Vector{Float64}}(totlen, nrep)
-  hodlr_hes = Matrix{Matrix{Float64}}(totlen, nrep)
+  hodlr_fit = Matrix{Vector{Float64}}(undef, totlen, nrep)
+  hodlr_hes = Matrix{Matrix{Float64}}(undef, totlen, nrep)
   hodlr_nlt = zeros(Float64, totlen, nrep)
   hodlr_hlt = zeros(Float64, totlen, nrep)
+  hodlr_itr = zeros(Int64, totlen, nrep)
+  exact_itr = zeros(Int64, totlen, nrep)
 
   for k in 1:nrep
 
@@ -75,16 +77,18 @@ for fnm in ["bigrange", "smallrange"]
 
       # Fit the HODLR version, profiled:
       println("Optimizing accelerated method:")
+      nitr = 0 
       # if the range parameter is small, use the trust region method to speed up fitting:
       if fnm == "smallrange"
-        h_t1 = @elapsed hminx = HODLR.trustregion(pinit, loc_s, dat_s, d2funs, popts, profile=true)
+        h_t1 = @elapsed nitr, hminx = HODLR.trustregion(pinit, loc_s, dat_s, d2funs, popts, profile=true)
       # If the range parameter is big, use the method of moving asymptotes, gradient only:
       elseif fnm == "bigrange"
         opt = Opt(:LD_MMA, length(pinit))
         ftol_rel!(opt, 1.0e-8)
         min_objective!(opt, (p,g) -> HODLR.nlpl_objective(p, g, loc_s, dat_s, popts))
         h_t1 = @elapsed (hminf, hminx, hret) = optimize(opt, pinit)
-        unshift!(hminx, HODLR.nlpl_scale(hminx, loc_s, dat_s, popts))
+        pushfirst!(hminx, HODLR.nlpl_scale(hminx, loc_s, dat_s, popts))
+        nitr = opt.numevals
       else
         error("File name not recognized.")
       end
@@ -101,17 +105,29 @@ for fnm in ["bigrange", "smallrange"]
       hodlr_hes[j,k] = hhess
       hodlr_nlt[j,k] = h_t1
       hodlr_hlt[j,k] = h_t2
+      hodlr_itr[j,k] = nitr
+
 
       # If the size is sufficiently small, fit the exact version, too:
       if jpow <= 13
 
         # Start where the HODLR-likelihood left off:
-        println("Optimizing exact method at accelerated minimizer:")
-        opt = Opt(:LD_MMA, length(pinit))
-        ftol_rel!(opt, 1.0e-8)
-        min_objective!(opt, (p,g) -> exact_nlpl_objective(p, g, loc_s, dat_s, kernfun, dfuns, false))
-        x_t1 = @elapsed (xminf, xminx, xret) = optimize(opt, hminx[2:end])
-        unshift!(xminx, exact_nlpl_scale(xminx, loc_s, dat_s, kernfun))
+        println("Optimizing exact method:")
+        x_t1 = 0
+        nitr = 0
+        if fnm == "smallrange"
+          x_t1 = @elapsed nitr, xminx = naive_trustregion(pinit, loc_s, dat_s, d2funs, popts, profile=true)
+        elseif fnm == "bigrange"
+          opt = Opt(:LD_MMA, length(pinit))
+          ftol_rel!(opt, 1.0e-8)
+          min_objective!(opt, (p,g) -> exact_nlpl_objective(p, g, loc_s, dat_s, kernfun, dfuns, false))
+          x_t1 = @elapsed (xminf, xminx, xret) = optimize(opt, pinit)
+          pushfirst!(xminx, exact_nlpl_scale(xminx, loc_s, dat_s, kernfun))
+          println("That took $x_t1 seconds.")
+          nitr = opt.numevals
+        else
+          error("File name not recognized.")
+        end
         println("That took $x_t1 seconds.")
         @show xminx
         println()
@@ -126,6 +142,7 @@ for fnm in ["bigrange", "smallrange"]
         exact_hes[j,k] = xhess
         exact_nlt[j,k] = x_t1
         exact_hlt[j,k] = x_t2
+        exact_itr[j,k] = nitr
 
       end
 
@@ -134,7 +151,7 @@ for fnm in ["bigrange", "smallrange"]
   end
 
   # Save the data:
-  outname = "estimates_matern_"*fnm*".jld" 
+  outname = "../../data/estimates_matern_"*fnm*".jld" 
   save(outname, "exact_fit", exact_fit,
                 "exact_nll", exact_nll,
                 "exact_hes", exact_hes,
@@ -144,6 +161,9 @@ for fnm in ["bigrange", "smallrange"]
                 "hodlr_hes", hodlr_hes,
                 "hodlr_nlt", hodlr_nlt,
                 "hodlr_hlt", hodlr_hlt,
+                "hodlr_itr", hodlr_itr,
+                "exact_itr", exact_itr,
                 "true_parm", trup)
 
 end
+

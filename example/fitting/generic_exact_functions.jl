@@ -45,8 +45,8 @@ end
 function exact_gradient_term(prms::AbstractVector{Float64}, locs::AbstractVector,
                              dats::AbstractVector, K::LinearAlgebra.Cholesky{Float64,Matrix{Float64}},
                              drfun::Function)::Float64
-  dK  = full(KernelMatrices.KernelMatrix(locs, locs, prms, drfun))
-  out = 0.5*trace(K\dK) - 0.5*dot(dats, K\(dK*(K\dats)))
+  dK  = KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, drfun))
+  out = 0.5*tr(K\dK) - 0.5*dot(dats, K\(dK*(K\dats)))
   return out
 end
 
@@ -70,7 +70,7 @@ function exact_HODLR_gradient_term(prms::AbstractVector{Float64}, locs::Abstract
                                    HKf::LinearAlgebra.Cholesky{Float64,Matrix{Float64}},
                                    drfun::Function, plel::Bool=false)::Float64
   dK  = KernelMatrices.full(HODLR.DerivativeHODLR(K, drfun, HK, plel=plel))
-  return 0.5*(trace(HKf\dK) - dot(dats, HKf\(dK*(HKf\dats))))
+  return 0.5*(tr(HKf\dK) - dot(dats, HKf\(dK*(HKf\dats))))
 end
 
 function exact_HODLR_gradient(prms::AbstractVector{Float64}, locs::AbstractVector,
@@ -85,12 +85,22 @@ function exact_HODLR_gradient(prms::AbstractVector{Float64}, locs::AbstractVecto
   return out
 end
 
+function exact_HODLR_nll_objective(prms::AbstractVector{Float64}, g::AbstractVector,
+                                   locs::AbstractVector, dats::AbstractVector, opts::HODLR.Maxlikopts)
+  nK  = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
+  HK  = HODLR.full(HODLR.KernelHODLR(nK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll))
+  if length(g) > 0
+    g .= exact_HODLR_gradient(prms, locs, dats, opts)
+  end
+  return 0.5*logdet(HK) + 0.5*dot(dats, HK\dats)
+end
+
 function exact_p_gradient_term(prms::AbstractVector{Float64}, locs::AbstractVector,
                                dats::AbstractVector, K::LinearAlgebra.Cholesky{Float64,Matrix{Float64}},
                                drfun::Function)::Float64
   dK  = KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, drfun))
   Ks  = K\dats
-  out = 0.5*trace(K\dK) - 0.5*length(dats)*dot(dats, K\(dK*(K\dats)))/dot(dats, Ks)
+  out = 0.5*tr(K\dK) - 0.5*length(dats)*dot(dats, K\(dK*(K\dats)))/dot(dats, Ks)
   return out
 end
 
@@ -111,7 +121,7 @@ end
 function exact_hessian_term(prms::AbstractVector{Float64}, locs::AbstractVector,
                             dats::AbstractVector, K::LinearAlgebra.Cholesky{Float64, Matrix{Float64}}, 
                             dKj::Matrix{Float64}, drfunk::Function, drfunjk::Function)::Float64
-  if drfunjk != HODLR.ZeroFunction()
+  if !(typeof(drfunjk) == HODLR.ZeroFunction)
     # Get all the required derivative matrices in place:
     dKk   = KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, drfunk))
     dKjk  = KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, drfunjk))
@@ -119,9 +129,9 @@ function exact_hessian_term(prms::AbstractVector{Float64}, locs::AbstractVector,
     o_sv  = dot(dats, K\(dKjk*(K\dats)))
     o_sv -= dot(dats, K\(dKk*(K\(dKj*(K\dats)))))
     o_sv -= dot(dats, K\(dKj*(K\(dKk*(K\dats)))))
-    # Compute the trace term:
-    o_tr  = trace(K\dKjk)
-    o_tr -= trace(K\(dKk*(K\dKj)))
+    # Compute the tr term:
+    o_tr  = tr(K\dKjk)
+    o_tr -= tr(K\(dKk*(K\dKj)))
     # return the term:
     return 0.5*o_tr - 0.5*o_sv
   else
@@ -131,11 +141,33 @@ function exact_hessian_term(prms::AbstractVector{Float64}, locs::AbstractVector,
     o_sv  = -dot(dats, K\(dKk*(K\(dKj*(K\dats)))))
     o_sv -= dot(dats, K\(dKj*(K\(dKk*(K\dats)))))
     # Compute the trace term:
-    o_tr  = -trace(K\(dKk*(K\dKj)))
+    o_tr  = -tr(K\(dKk*(K\dKj)))
     # return the term:
     return 0.5*o_tr - 0.5*o_sv
   end
 end
+
+
+function exact_p_hessian_term(prms::AbstractVector{Float64}, locs::AbstractVector,
+                              dats::AbstractVector, K::LinearAlgebra.Cholesky{Float64, Matrix{Float64}}, 
+                              dKj::Matrix{Float64}, drfunk::Function, drfunjk::Function)::Float64
+  # Get all the required derivative matrices in place:
+  dKk   = KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, drfunk))
+  dKjk  = KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, drfunjk))
+  # Get the trace term:
+  trt   = tr(K\dKjk)
+  trt  -= tr(K\dKk*(K\dKj))
+  # Get the solve term:
+  tmp1  = dot(dats, K\dats)
+  tmpj  = dot(dats, K\(dKj*(K\dats)))
+  tmpk  = dot(dats, K\(dKk*(K\dats)))
+  tmpjk = dot(dats, K\(dKk*(K\(dKj*(K\dats)))))
+  tmpjk-= dot(dats, K\(dKjk*(K\dats)))
+  tmpjk+= dot(dats, K\(dKj*(K\(dKk*(K\dats)))))
+  # Return the term:
+  return 0.5*trt + 0.5*length(dats)*(tmpjk/tmp1 - tmpj*tmpk/abs2(tmp1))
+end
+
 
 function exact_HODLR_hessian_term(prms::AbstractVector{Float64}, locs::AbstractVector,
                                   dats::AbstractVector, opts::HODLR.Maxlikopts,
@@ -146,7 +178,7 @@ function exact_HODLR_hessian_term(prms::AbstractVector{Float64}, locs::AbstractV
                                   dKj::Matrix{Float64},
                                   drfunk::Function,
                                   drfunjk::Function)::Float64
-  if drfunjk != HODLR.ZeroFunction()
+  if !(typeof(drfunjk) == HODLR.ZeroFunction)
     # Get all the required derivative matrices in place:
     dKk_  = HODLR.DerivativeHODLR(K, drfunk, HK, plel=opts.apll)
     dKk   = HODLR.full(dKk_)
@@ -160,8 +192,8 @@ function exact_HODLR_hessian_term(prms::AbstractVector{Float64}, locs::AbstractV
     o_sv -= dot(dats, HKf\(dKk*(HKf\(dKj*(HKf\dats)))))
     o_sv -= dot(dats, HKf\(dKj*(HKf\(dKk*(HKf\dats)))))
     # Compute the trace term:
-    o_tr  = trace(HKf\dKjk)
-    o_tr -= trace(HKf\(dKk*(HKf\dKj)))
+    o_tr  = tr(HKf\dKjk)
+    o_tr -= tr(HKf\(dKk*(HKf\dKj)))
     # return the term:
     return 0.5*o_tr - 0.5*o_sv
   else
@@ -172,11 +204,12 @@ function exact_HODLR_hessian_term(prms::AbstractVector{Float64}, locs::AbstractV
     o_sv  = -dot(dats, HKf\(dKk*(HKf\(dKj*(HKf\dats)))))
     o_sv -= dot(dats, HKf\(dKj*(HKf\(dKk*(HKf\dats)))))
     # Compute the trace term:
-    o_tr  = -trace(HKf\(dKk*(HKf\dKj)))
+    o_tr  = -tr(HKf\(dKk*(HKf\dKj)))
     # return the term:
     return 0.5*o_tr - 0.5*o_sv
   end
 end
+
 
 function exact_hessian(prms::AbstractVector,locs::AbstractVector, dats::AbstractVector,
                        kernfun::Function, dfuns::Vector{Function}, d2funs::Vector{Vector{Function}})
@@ -190,6 +223,21 @@ function exact_hessian(prms::AbstractVector,locs::AbstractVector, dats::Abstract
   end
   return Symmetric(out)
 end
+
+
+function exact_p_hessian(prms::AbstractVector,locs::AbstractVector, dats::AbstractVector,
+                         kernfun::Function, dfuns::Vector{Function}, d2funs::Vector{Vector{Function}})
+  K   = cholesky!(KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, kernfun)))
+  out = zeros(length(dfuns), length(dfuns))
+  for j in eachindex(dfuns)
+    dKj = KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, dfuns[j]))
+    for k in j:length(dfuns)
+      out[j,k] = exact_p_hessian_term(prms, locs, dats, K, dKj, dfuns[k], d2funs[j][k-j+1])
+    end
+  end
+  return Symmetric(out)
+end
+
 
 function exact_HODLR_hessian(prms::AbstractVector,locs::AbstractVector, dats::AbstractVector,
                              opts::HODLR.Maxlikopts, d2funs::Vector{Vector{Function}})
@@ -219,7 +267,7 @@ function exact_HODLR_fisher(prms::AbstractVector,locs::AbstractVector, dats::Abs
     for k in j:length(dfuns)
       dKk  = HODLR.DerivativeHODLR(nK, opts.dfuns[k], HK, plel=opts.apll)
       dKkf = HODLR.full(dKk)
-      out[j,k] = 0.5*trace(HKf\(dKjf*(HKf\dKkf)))
+      out[j,k] = 0.5*tr(HKf\(dKjf*(HKf\dKkf)))
     end
   end
   return Symmetric(out)
@@ -233,9 +281,95 @@ function exact_fisher_matrix(prms::AbstractVector, locs::AbstractVector, dats::A
     dKj = KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, dfuns[j]))
     for k in j:length(dfuns)
       dKk      = KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, dfuns[k]))
-      out[j,k] = 0.5*trace(K\(dKj*(K\dKk)))
+      out[j,k] = 0.5*tr(K\(dKj*(K\dKk)))
     end
   end
   return Symmetric(out)
+end
+
+
+function _subproblem(xv::Vector, fx::Float64, gx::Vector, hx::Symmetric{Float64, Matrix{Float64}}, pv::Vector)
+  return fx + dot(gx, pv) + 0.5*dot(pv,hx*pv)
+end
+
+function _rho(objfxp::Float64, x::Vector, fx::Float64, gx::Vector, 
+              hx::Symmetric{Float64, Matrix{Float64}}, p::Vector)
+  numr = fx - objfxp
+  denm = _subproblem(x,fx,gx,hx,zeros(length(p))) - _subproblem(x,fx,gx,hx,p)
+  return numr/denm
+end
+
+function _solve_subproblem_exact(g::Vector, B::Symmetric{Float64, Matrix{Float64}}, del::Float64)
+  lmin = max(0.0, -real(eigmin(B)))
+  lval = lmin + 0.1
+  pl   = zeros(length(g))
+  for cnt in 0:10
+    Bi    = Symmetric(B + I*lval)
+    R     = cholesky(Bi).U
+    pl    = -Bi\g
+    ql    = R\pl
+    lval += abs2(norm(pl)/norm(ql))*(norm(pl)-del)/del
+    (lval < lmin + 1.0e-10) && break
+  end
+  return pl
+end
+
+function naive_trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
+                           d2funs::Vector{Vector{Function}}, opts::HODLR.Maxlikopts; profile::Bool=false,
+                           vrb::Bool=false, dmax::Float64=1.0, dini::Float64=0.5,
+                           eta::Float64=0.125, rtol::Float64=1.0e-8, atol::Float64=1.0e-5,
+                           maxit::Int64=200, dcut::Float64=1.0e-4)
+  dl, r1, st, cnt, fg = dini, 0.0, 0, 0, false
+  xv = deepcopy(init)
+  ro = zeros(length(init))
+  gx = zeros(length(init))
+  hx = zeros(length(init), length(init))
+  for ct in 0:maxit
+    cnt += 1
+    vrb && println(xv)
+    t1 = @elapsed begin
+    if profile
+      fx = exact_nlpl_objective(xv, gx, loc_s, dat_s, opts.kernfun, opts.dfuns, false)
+    else
+      fx = exact_nll_objective(xv, gx, loc_s, dat_s, opts.kernfun, opts.dfuns, false)
+    end
+    end
+    vrb && println("objective+gradient  call took this long:  $(round(t1, digits=4))")
+    t2 = @elapsed begin
+    if profile
+      hx .= exact_p_hessian(xv, loc_s, dat_s, opts.kernfun, opts.dfuns, d2funs)
+    else
+      hx .= exact_hessian(xv, loc_s, dat_s, opts.kernfun, opts.dfuns, d2funs)
+    end
+    end
+    vrb && println("Hessian call took this long:              $(round(t2, digits=4))")
+    vrb && println("Total time for the iteration:             $(round(t1+t2, digits=4))")
+    vrb && println()
+    # Solve the corresponding sub-problem:
+    ro  .= _solve_subproblem_exact(gx, Symmetric(hx), dl)
+    if profile
+      fxp  = exact_nlpl_objective(xv.+ro, Array{Float64}(undef, 0), loc_s, dat_s, opts.kernfun,
+                                  opts.dfuns, false)
+    else
+      fxp  = exact_nll_objective(xv.+ro, Array{Float64}(undef, 0), loc_s, dat_s, opts.kernfun,
+                                 opts.dfuns, false)
+    end
+    r1   = _rho(fxp, xv, fx, gx, Symmetric(hx), ro)
+    # Perform tests on solution of sub-problem:
+    (r1 < 0.25)    && (dl = 0.25*norm(ro))
+    (r1 > 0.75)    && (dl = min(2.0*norm(ro), dmax))
+    (r1 > eta)     && (xv .+= ro)
+    # Perform test for relative tolerance being reached:
+    (fx != fxp && (isapprox(fx, fxp, rtol=rtol) || isapprox(fx, fxp, atol=atol))) && (fg = true)
+    # Test for stopping the loop:
+    fg             && (vrb && println("STOP: tolerance reached") ;          println() ; break)
+    (norm(gx)<rtol)&& (vrb && println("STOP: Gradient reached tolerance") ; println() ; break)
+    (dl<dcut)      && (vrb && println("STOP: Size of region too small")   ; println() ; break)
+  end
+  vrb && println("Total number of calls: $cnt")
+  if profile
+    pushfirst!(xv, exact_nlpl_scale(xv, loc_s, dat_s, opts.kernfun))
+  end
+  return cnt, xv
 end
 

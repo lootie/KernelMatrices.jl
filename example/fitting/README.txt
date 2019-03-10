@@ -16,9 +16,8 @@ generic_exact_functions.jl:
 test_fit_*.jl:
   A few examples that have the small boilerplate required to fit data in a few ways. The nlopt
   example uses the method of moving asymptotes, which does not use the Hessian; The trustregion
-  example minimizes the full likelihood with the trust region method; And the profile example
-  minimizes the profile likelihood with the trust region strategy and then compares with the exact
-  minimizer. 
+  example minimizes the full likelihood AND profile likelihood with the trust region method and
+  compares the two results.
 
 
 The boilerplate provided by the test_fit_*.jl files should really be enough to cover basically any

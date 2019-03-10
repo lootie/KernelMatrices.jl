@@ -2,7 +2,7 @@
 using JLD
 
 # Load in the data:
-data   = load("/path/to/precision_estimators.jld")
+data    = load("../../data/precision_estimators.jld")
 
 # Declare the precision function:
 precfn  = (x,y)   -> norm(x-y)/max(norm(x), norm(y)) 

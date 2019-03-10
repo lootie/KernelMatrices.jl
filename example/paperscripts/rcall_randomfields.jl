@@ -10,7 +10,7 @@ end
 
 # A wrapper for getting simulations via RandomFields.
 function R_randomfieldmatern(parms::Vector, boxsize::Float64, powsz::Int64; dim::Int64=2,
-                             seed::Union{Void, Int32}=nothing)
+                             seed::Union{Nothing, Int32}=nothing)
   # Get the size:
   sz = dim == 2 ? Int64(sqrt(powsz)) : Int64(cbrt(powsz))
   # Load the parms:
@@ -29,7 +29,7 @@ function R_randomfieldmatern(parms::Vector, boxsize::Float64, powsz::Int64; dim:
   ful = string("RFsimulate(", covstring, ",", grdstr, ")[1]")
   smd = reval(ful)
   # Get the corresponding spatial grid:
-  gd  = linspace(0.0, boxsize, sz)
+  gd  = LinRange(0.0, boxsize, sz)
   pts = ifelse(dim==2, map(x->SVector{2, Float64}(x[1], x[2]), Iterators.product(gd, gd))[:],
                map(x->SVector{3, Float64}(x[1], x[2], x[3]), Iterators.product(gd, gd, gd))[:])
   # Return both gridpoints and the output data:
@@ -43,8 +43,12 @@ end
 ##
 #
 # Script component: simulating datasets to be fitted in the paper with maximal
-# maximal focus on reproducibility. This should yield the same datasets every time
-# and on any machine.
+# maximal focus on reproducibility. 
+#
+# I hoped that this would yield the same datasets every time and on any machine, but running it
+# ~five months later definitely gave me different simulations back. So to use the exact simulated
+# datasets in the paper, better to go to the JCGS submission page and download the data, or just
+# email me (cgeoga@anl.gov) for it. 
 #
 ##
 
@@ -63,8 +67,10 @@ for (prms, seeds, nam) in zip([stein_p1, stein_p2], [seeds_p1, seeds_p2], names)
   pstd = vcat(collect(stein_to_schlather(prms...)), prms[end])
   data = map(x->R_randomfieldmatern(pstd, 100.0, 2^18, dim=2, seed=x), seeds)
   # save the files together:
-  save(nam, "unsorted_data", map(x->x[2], data), "unsorted_locations", data[1][1], "stein_true",
+  save(nam,  "unsorted_data", map(x->x[2], data), "unsorted_locations", data[1][1], "stein_true",
        prms, "standard_true", pstd)
 end
 
+mv(names[1], "../../data/"*names[1])
+mv(names[2], "../../data/"*names[2])
 

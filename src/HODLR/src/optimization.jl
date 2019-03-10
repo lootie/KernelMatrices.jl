@@ -27,9 +27,9 @@ end
 
 function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
                      d2funs::Vector{Vector{Function}}, opts::Maxlikopts; profile::Bool=false,
-                     strict::Bool=false, vrb::Bool=false, dmax::Float64=1.0, dini::Float64=0.5,
-                     eta::Float64=0.125, rtol::Float64=1.0e-8, atol::Float64=1.0e-5,
-                     maxit::Int64=200, dcut::Float64=1.0e-4)
+                     vrb::Bool=false, dmax::Float64=1.0, dini::Float64=0.5, eta::Float64=0.125,
+                     rtol::Float64=1.0e-8, atol::Float64=1.0e-5, maxit::Int64=200,
+                     dcut::Float64=1.0e-4)
   dl, r1, st, cnt, fg = dini, 0.0, 0, 0, false
   xv = deepcopy(init)
   ro = zeros(length(init))
@@ -48,9 +48,9 @@ function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
     vrb && println("objective+gradient  call took this long:  $(round(t1, digits=4))")
     t2 = @elapsed begin
     if profile
-      hx .= nlpl_hessian(xv, loc_s, dat_s, opts, d2funs, strict)
+      hx .= nlpl_hessian(xv, loc_s, dat_s, opts, d2funs)
     else
-      hx .= nll_hessian(xv, loc_s, dat_s, opts, d2funs, strict)
+      hx .= nll_hessian(xv, loc_s, dat_s, opts, d2funs)
     end
     end
     vrb && println("Hessian call took this long:              $(round(t2, digits=4))")
@@ -79,6 +79,6 @@ function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
   if profile
     pushfirst!(xv, nlpl_scale(xv, loc_s, dat_s, opts))
   end
-  return xv
+  return cnt, xv
 end
 

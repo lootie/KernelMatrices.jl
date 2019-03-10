@@ -50,7 +50,7 @@ for (j, jpow) in enumerate(powers)
     simdd            = HODLR.gpsimulate(pts, trup, opts, exact=true, kdtreesort=true)
     loc_s,dat_s      = simdd[1], simdd[2]
     # Fit the data:
-    apx_fit_mle[k,j] = HODLR.trustregion(trup.-1.0, loc_s, dat_s, d2funs, opts)
+    apx_fit_mle[k,j] = HODLR.trustregion(trup.-1.0, loc_s, dat_s, d2funs, opts)[2]
     # Get the exact HODLR hessian and gradient at the init and MLE:
     ext_grd_far[k,j] = exact_HODLR_gradient(testp,          loc_s, dat_s, opts)
     ext_grd_mle[k,j] = exact_HODLR_gradient(apx_fit_mle[j], loc_s, dat_s, opts)
@@ -68,7 +68,7 @@ for (j, jpow) in enumerate(powers)
 end
 
 # Save the precision stuff:
-save("precision_estimators.jld", "apx_fit_mle",  apx_fit_mle,
+save("../../data/precision_estimators.jld", "apx_fit_mle",  apx_fit_mle,
                                  "ext_grd_mle",  ext_grd_mle,
                                  "ext_grd_far",  ext_grd_far,
                                  "apx_grd_far",  apx_grd_far,

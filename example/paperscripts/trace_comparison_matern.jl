@@ -74,7 +74,7 @@ for j in eachindex(hutchN)
   println()
 end
 
-save("materntraces.jld", "tr1", tr1_sym, 
+save("../../data/materntraces.jld", "tr1", tr1_sym, 
                          "tr2", tr2_sym, 
                          "tr3", tr3_sym,
                          "as1", tr1_asm,

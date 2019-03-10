@@ -1,4 +1,6 @@
 
+using SpecialFunctions
+
 ##
 #
 # Inverse quadratic:

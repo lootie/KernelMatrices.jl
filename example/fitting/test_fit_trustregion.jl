@@ -1,11 +1,11 @@
 
 using Distributed, Random
 
-@everywhere begin
-using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors, NLopt, SpecialFunctions
-
 # Set the seed for the same output each time:
 Random.seed!(1618)
+
+@everywhere begin
+using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors, NLopt, SpecialFunctions
 
 # Load in the covariance functions:
 include("fitting_funs.jl")
@@ -56,13 +56,13 @@ dat_s    = simdd[2]
 println()
 println("Optimizing profile likelihood...")
 println()
-@time fitd = HODLR.trustregion(pinits, loc_s, dat_s, d2funs, popts, vrb=true, profile=true)
+@time prof_cnt, fitd = HODLR.trustregion(pinits, loc_s, dat_s, d2funs, popts, vrb=true, profile=true)
 
 # Now fit the full likelihood for comparison:
 println()
 println("Optimizing full likelihood...")
 println()
-@time fuld = HODLR.trustregion(finits, loc_s, dat_s, fd2funs, fopts, vrb=true)
+@time full_cnt, fuld = HODLR.trustregion(finits, loc_s, dat_s, fd2funs, fopts, vrb=true)
 
 # Print the output:
 println("Results:")

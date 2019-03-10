@@ -13,7 +13,7 @@ module KernelMatrices
   include("factorizations.jl")
 
   # Its own module:
-  include("HODLR/src/HODLR.jl")
+  include("HODLR/HODLR.jl")
 
 end
 

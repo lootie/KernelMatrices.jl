@@ -2,6 +2,10 @@
 # Here is an example of constructing a HODLR matrix
 # in a matrix-free way using the KernelMatrix type.
 
+println()
+println("NOTE: if you are lazy but want see pre-compiled times, just run this script twice in the same REPL.")
+println()
+
 include("basicexample.jl")
 using  KernelMatrices.HODLR
 

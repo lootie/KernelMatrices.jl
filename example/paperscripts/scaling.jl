@@ -4,9 +4,11 @@ using Distributed, Random
 # Bring some things into scope on every worker:
 @everywhere begin
 using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, SpecialFunctions
+
 # Load in the scripts that define the generic functions:
 include("../fitting/fitting_funs.jl")
 include("../fitting/generic_exact_functions.jl")
+
 # Choose the kernel function:
 kernfun   = mt1_kernfun
 dfuns     = [mt1_kernfun_d1, mt1_kernfun_d2]
@@ -38,7 +40,7 @@ for r in eachindex(ranks)
   println()
   # Loop across, estimating/computing exactly for powers 2^j:
   for (j, jpow) in enumerate(powers)
-    println("Working on size 2^$jpow...")
+    println("Working on size 2^$jpow...(rank $(ranks[r]))...($(nworkers()) workers)")
     # Generate opts that have the appropriate rank and SAA size:
     opts  = HODLR.Maxlikopts(kernfun,dfuns,0.0,HODLR.LogLevel(8),ranks[r],
                              HODLR.givesaa(35, 2^jpow), true, true, false, true)
@@ -47,13 +49,13 @@ for r in eachindex(ranks)
     simdd = HODLR.gpsimulate(pts, trup, opts, exact=false, kdtreesort=true)
     loc_s = simdd[1]
     dat_s = simdd[2]
-    # Get the exact values:
-    println()
-    println("Computing exact values once for timing...")
-    println()
+    # Get the exact values for small sizes once:
     if jpow <= 13 && r == 1
+      println()
+      println("Computing exact values once for timing...")
+      println()
       # Get the exact likelihood:
-      xnl_time[j] = @elapsed exact_nll_objective(testp, Array{Float64}(0), loc_s, dat_s, kernfun, dfuns, false)
+      xnl_time[j] = @elapsed exact_nll_objective(testp, Array{Float64}(undef, 0), loc_s, dat_s, kernfun, dfuns, false)
       # Get the exact gradient:
       xgd_time[j] = @elapsed exact_gradient(testp, loc_s, dat_s, kernfun, dfuns)
       # Get the exact hessian:
@@ -64,7 +66,7 @@ for r in eachindex(ranks)
     for k in 1:nrept
       println("Doing rep $k of $nrept...")
       # Get the HODLR likelihood:
-      hnl_time[r,k,j] = @elapsed HODLR.nll_objective(testp, Array{Float64}(0), loc_s, dat_s, opts)
+      hnl_time[r,k,j] = @elapsed HODLR.nll_objective(testp, Array{Float64}(undef, 0), loc_s, dat_s, opts)
       # Get the stochastic gradients:
       sgd_time[r,k,j] = @elapsed HODLR.nll_gradient(testp, loc_s, dat_s, opts)
       # Get the stochastic Hessians:
@@ -76,10 +78,14 @@ end
 
 # Save the scaling stuff:
 using JLD
-save("scaling_times.jld",  "exact_lik_times", xnl_time,
-                           "exact_grd_times", xgd_time,
-                           "exact_hes_times", xhs_time,
-                           "hodlr_lik_times", hnl_time,
-                           "hodlr_grd_times", sgd_time,
-                           "hodlr_hes_times", shs_time)
+name = "../../data/scaling_times_"*string(nworkers())*"workers.jld"
+save(name, "exact_lik_times", xnl_time,
+           "exact_grd_times", xgd_time,
+           "exact_hes_times", xhs_time,
+           "hodlr_lik_times", hnl_time,
+           "hodlr_grd_times", sgd_time,
+           "hodlr_hes_times", shs_time)
+println()
+println("Saved file $name...")
+println()
 

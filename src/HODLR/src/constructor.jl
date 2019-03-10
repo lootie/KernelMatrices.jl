@@ -23,10 +23,11 @@ function KernelHODLR(K::KernelMatrix{T}, ep::Float64, maxrank::Int64, lvl::HierL
   leaves = mapf(x->Symmetric(K[x[1]:x[2], x[3]:x[4]]), leafinds, nwrk, plel)
 
   # Get the rest of the decompositions of the non-leaf nodes in place:
-  U = Vector{Vector{Matrix{T}}}(undef, level-1)  
-  V = Vector{Vector{Matrix{T}}}(undef, level-1)  
-  for j in 1:(level-1)
+  U = Vector{Vector{Matrix{T}}}(undef, level)  
+  V = Vector{Vector{Matrix{T}}}(undef, level)  
+  for j in eachindex(U)
     if nystrom
+      nonleafinds[j]
       tmpUV = mapf(x->KernelMatrices.nystrom_uvt(nlfisub(K, x), nyker), nonleafinds[j], nwrk, plel)
     else
       tmpUV = mapf(x->KernelMatrices.ACA(nlfisub(K, x), ep, maxrank), nonleafinds[j], nwrk, plel)
@@ -62,8 +63,8 @@ function DerivativeHODLR(K::KernelMatrix{T}, dfun::Function, HK::KernelHODLR{T};
   leaves = mapf(x->Symmetric(dK[x[1]:x[2], x[3]:x[4]]), HK.leafindices, nwrk, plel)
 
   # Get the non-leaves in place:
-  B      = Vector{Vector{DerivativeBlock{T}}}(undef, HK.lvl-1)
-  for j in 1:(HK.lvl-1)
+  B      = Vector{Vector{DerivativeBlock{T}}}(undef, HK.lvl)
+  for j in eachindex(B)
     B[j] = mapf(x->DBlock(nlfisub(K, x), dfun, lndmk), HK.nonleafindices[j], nwrk, plel)
   end
 

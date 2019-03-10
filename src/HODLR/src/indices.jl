@@ -57,7 +57,7 @@ function HODLRindices(N::Int64, lvl::HierLevel)::Tuple{Int64,
   lv, lfszs = _leafsizes(N, lvl)
   lfind     = _leafindices(lfszs)
   nonlfind  = [_nextlevel(lfind, 1)]
-  for j in 2:(lv-1)
+  for j in 2:lv
     push!(nonlfind, _nextlevel(lfind, j))
   end
   return lv, lfind, nonlfind

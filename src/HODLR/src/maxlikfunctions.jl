@@ -95,7 +95,7 @@ function nll_gradient(prms::AbstractVector, locs::AbstractVector, dats::Abstract
 end
 
 function nll_hessian(prms::AbstractVector, locs::AbstractVector, dats::AbstractVector, opts::Maxlikopts,
-                     d2funs::Vector{Vector{Function}}, strict::Bool=false)
+                     d2funs::Vector{Vector{Function}})
   nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   tim1 = @elapsed begin
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
@@ -113,7 +113,7 @@ end
 
 # Negative Log PROFILE likelihood Hessian
 function nlpl_hessian(prms::AbstractVector, locs::AbstractVector, dats::AbstractVector, opts::Maxlikopts,
-                      d2funs::Vector{Vector{Function}}, strict::Bool=false)
+                      d2funs::Vector{Vector{Function}})
   nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   tim1 = @elapsed begin
   HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
