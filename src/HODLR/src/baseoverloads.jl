@@ -168,8 +168,8 @@ function LinearAlgebra.mul!(target::StridedVector, K::KernelHODLR{T}, src::Strid
     for j in eachindex(K.U)
       for k in eachindex(K.U[j])
         a, b, c, d   = K.nonleafindices[j][k]
-        target[c:d] += K.V[j][k]*At_mul_B(K.U[j][k], src[a:b])
-        target[a:b] += K.U[j][k]*At_mul_B(K.V[j][k], src[c:d])
+        target[c:d] += K.V[j][k]*(transpose(K.U[j][k])*src[a:b])
+        target[a:b] += K.U[j][k]*(transpose(K.V[j][k])*src[c:d])
       end
     end
   else
