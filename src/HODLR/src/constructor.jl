@@ -11,6 +11,7 @@ function KernelHODLR(K::KernelMatrix{T}, ep::Float64, maxrank::Int64, lvl::HierL
 
   # If the Nystrom method was requested, prepare that:
   if nystrom
+    maxrank < 2 && error("Please supply a fixed off-diagonal rank that is ≧2.")
     if maxrank >= minimum(map(x->min(x[2]-x[1], x[4]-x[3]), leafinds))
       error("Your nystrom rank is too big. Reduce the HODLR level or nystrom rank.")
     end

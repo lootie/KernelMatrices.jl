@@ -1,3 +1,4 @@
 StaticArrays
 IterTools
 NearestNeighbors
+julia 0.7

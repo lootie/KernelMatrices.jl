@@ -40,7 +40,7 @@ locs = [SVector{2, Float64}(randn(2)) for _ in 1:n]
 # everywhere, including at the origin, you may encounter some numerical problems. To avoid writing
 # something like the Matern covariance function here, I pick a simpler positive definite function
 # and simply add a nugget to be safe.
-function kernelfunction(x::Abstractvector, y::AbstractVector, p::AbstractVector{T})::T where{T<:Number}
+function kernelfunction(x::AbstractVector, y::AbstractVector, p::AbstractVector{T})::T where{T<:Number}
   out = abs2(p[1])/abs2(1.0 + abs2(norm(x-y)/p[2]))
   if x == y
     out += 1.0
@@ -72,14 +72,15 @@ tol  = 1.0e-12            # This flag works how you'd expect.
 lvl  = HODLR.LogLevel(8)  # Sets the level at log2(n)-8. HODLR.FixedLevel(k) also exists and works how you'd expect.
 rnk  = 0                  # If set to 0, no fixed max rank. Otherwise, this arg works as you'd expect.
 pll  = false              # This flag determines whether assembly of the matrix is done in parallel.
-HK_a = HODLR.KernelHODLR(K, tol, lvl, rnk, nystrom=false, plel=pll)
+HK_a = HODLR.KernelHODLR(K, tol, rnk, lvl, nystrom=false, plel=pll)
 
 # For the Nystrom approximation, you need to choose:
   # An optional fixed level (lvl),
   # A fixed off-diagonal rank that is GLOBAL (rnk),
   # and a parallel assembly option.
 # Note that "tol" is not actually used here. I could probably clean that code up some day.
-HK_n = HODLR.KernelHODLR(K, tol, lvl, rnk, nystrom=true, plel=pll)
+n_rk = 2 # choose a valid fixed rank for off-diagonal blocks
+HK_n = HODLR.KernelHODLR(K, tol, n_rk, lvl, nystrom=true, plel=pll)
 ```
 
 Congrats! You can now do `HK_n*vec` and `HK_a*vec` in quasilinear complexity, assuming in the case
