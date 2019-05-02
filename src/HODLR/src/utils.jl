@@ -1,11 +1,6 @@
 
-function mul_t(A, B)
-  return A*transpose(B)
-end
-
-function t_mul(A, B)
-  return transpose(A)*B
-end
+mul_t(A, B) = A*transpose(B)
+t_mul(A, B) = transpose(A)*B
 
 function mapf(f::Function, v, nwrk::Int64, plel::Bool)
   if plel && nwrk > 1 
@@ -127,8 +122,8 @@ function invapply!(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Matri
                    Uvec::Vector{Vector{Matrix{Float64}}}, Vvec::Vector{Vector{Matrix{Float64}}},
                    parallel::Bool=false)::Nothing where{T<:Number}
   # This parallel implementation is oddly slower than the serial-loop one. I'm not entirely sure why
-  # that is, but if I had to guess it has something to do with zip making a copy when it shouldn't
-  # or something.
+  # that is, but if I had to guess I have done some poor coding and extra copies are being made or 
+  # something. Alternatively, my things are complicated enough that the functional tools are unhappy.
   if parallel
     jmp   = Int64(length(Wvec)/(2*length(Uvec[lvl])))
     WvecV = imap(collect, partition(Wvec, jmp, 2*jmp))

@@ -42,23 +42,6 @@ function getsortperm(x::Vector{T}, xsorted::Vector{T})::Vector{Int64} where{T}
   return sortperm
 end
 
-function shiftpts(v::Vector, coordmin::Float64=1.0, coordmax::Float64=2.0)::Vector
-  sv       = deepcopy(v)
-  ptd      = length(v[1])
-  cmins    = zeros(ptd)
-  cmaxs    = zeros(ptd)
-  for j in 1:ptd
-    cmins[j] = minimum(map(x->x[j], v))
-    cmaxs[j] = maximum(map(x->x[j], v))
-  end
-  for j in eachindex(v)
-    for k in 1:ptd
-      sv[j][k] = (sv[j][k] - cmins[k])/(cmaxs[k] - cmins[k]) + 1.0
-    end
-  end
- return sv
-end
-
 function submatrix(K::KernelMatrix{T}, startj::Int64, stopj::Int64, 
                    startk::Int64, stopk::Int64)::KernelMatrix{T} where{T<:Number}
   return KernelMatrix(view(K.x1, startj:stopj), view(K.x2, startk:stopk), K.parms, K.kernel)

@@ -27,7 +27,7 @@ function NystromKernel(T::Type, kern::Function, landmark::AbstractVector,
       M[j,k] = kern(landmark[j], landmark[k], parms)
     end
   end
-  F = ispd ? cholesky!(Symmetric(M + 1.0e-12I)) : bkfact!(Symmetric(M))
+  F = ispd ? cholesky!(Symmetric(M)) : bkfact!(Symmetric(M))
   tmp1 = Array{T}(undef, length(landmark))
   tmp2 = Array{T}(undef, length(landmark))
   return NystromKernel{T}(kern, parms, landmark, tmp1, tmp2, F)

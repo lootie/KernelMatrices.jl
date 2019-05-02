@@ -22,7 +22,7 @@ function full(M::LowRankW{T})::Matrix{T} where{T<:Number}
   return I + mul_t(M.M*M.X, M.M)
 end
 
-function LinearAlgebra.det(W::LowRankW{T})::Float64 where{T<:Number}
+function det(W::LowRankW{T})::Float64 where{T<:Number}
   return det(I + t_mul(W.M, W.M)*W.X)
 end
 
@@ -41,17 +41,7 @@ function full(K::KernelHODLR{T})::Matrix{T} where{T<:Number}
   return Out
 end
 
-# VERY computationally inefficient. This really is only for testing.
-function full(W::FactorHODLR{T})::Matrix{T} where{T<:Number}
-  Out = cat(W.leafW..., dims=[1,2])
-  # Multiply the nonleaves:
-  for j in 1:length(W.nonleafW)
-    Out = Out*cat(full.(W.nonleafW[j])..., dims=[1,2])
-  end
-  return Out
-end
-
-function LinearAlgebra.mul!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
+function mul!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
@@ -73,7 +63,7 @@ function _At_mul_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) whe
   return target
 end
 
-function LinearAlgebra.ldiv!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
+function ldiv!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
@@ -95,7 +85,7 @@ function _At_ldiv_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) wh
   return target
 end
 
-function LinearAlgebra.mul!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
+function mul!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the nonleafW vectors in the correct order:
@@ -127,7 +117,7 @@ function _At_mul_B!(target::StridedVector, A::StridedMatrix, src::StridedVector)
   mul!(target, transpose(A), src)
 end
 
-function LinearAlgebra.ldiv!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
+function ldiv!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the leaf vectors:
@@ -155,7 +145,7 @@ function _At_ldiv_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVecto
   return target
 end
 
-function LinearAlgebra.mul!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
+function mul!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
   if K.W == nothing
     # Zero out the target vector:
     fill!(target, zero(eltype(target)))
@@ -187,7 +177,7 @@ function _At_mul_B!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector
   return mul!(target, K, src)
 end
 
-function LinearAlgebra.ldiv!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
+function ldiv!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
   if K.W == nothing
     error("No solves without factorization.")
   else
@@ -203,7 +193,7 @@ function _At_ldiv_B!(target::StridedVector, K::KernelHODLR{T}, src::StridedVecto
   return ldiv!(target, K, src)
 end
 
-function LinearAlgebra.logdet(K::KernelHODLR{T})::Float64 where{T<:Number}
+function logdet(K::KernelHODLR{T})::Float64 where{T<:Number}
   if K.W == nothing
     error("No logdet without factorization.")
   else
@@ -240,7 +230,7 @@ function full(DK::DerivativeHODLR{T})::Matrix{T} where{T<:Number}
   return Out
 end
 
-function LinearAlgebra.mul!(target::StridedVector, DK::DerivativeHODLR{T}, src::StridedVector) where{T<:Number}
+function mul!(target::StridedVector, DK::DerivativeHODLR{T}, src::StridedVector) where{T<:Number}
   # Zero out the target vector:
   fill!(target, zero(eltype(target)))
   # Apply the leaves:
@@ -267,49 +257,51 @@ end
 
 function LinearAlgebra.:*(K::KernelHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(undef, length(source))
-  mul!(target, K, source)
-  return target
+  return mul!(target, K, source)
 end
 
 function LinearAlgebra.:*(W::FactorHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(undef, length(source))
-  mul!(target, W, source)
-  return target
+  return mul!(target, W, source)
 end
 
 function LinearAlgebra.:\(K::KernelHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(undef, length(source))
-  ldiv!(target, K, source)
-  return target
+  return ldiv!(target, K, source)
 end
 
 function LinearAlgebra.:*(W::LowRankW{T}, src::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(undef, length(source))
-  mul!(target, W, src)
-  return target
+  return mul!(target, W, src)
 end
 
 function LinearAlgebra.:*(W::LowRankW{T}, src::Matrix{T})::Matrix{T} where{T<:Number}
   target = Array{T}(undef, size(src))
-  mul!(target, W, src)
-  return target
+  return mul!(target, W, src)
 end
 
 function LinearAlgebra.:*(DK::DerivativeHODLR{T}, src::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(undef, size(src))
-  mul!(target, DK, src)
-  return target
+  return mul!(target, DK, src)
 end
 
 function LinearAlgebra.:\(W::LowRankW{T}, src::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(undef, length(source))
-  ldiv!(target, W, src)
-  return target
+  return ldiv!(target, W, src)
 end
 
 function LinearAlgebra.:\(W::LowRankW{T}, src::Matrix{T})::Matrix{T} where{T<:Number}
   target = Array{T}(undef, size(src))
-  ldiv!(target, W, src)
-  return target
+  return ldiv!(target, W, src)
+end
+
+# VERY computationally inefficient. This really is only for testing.
+function full(W::FactorHODLR{T})::Matrix{T} where{T<:Number}
+  Out = cat(W.leafW..., dims=[1,2])
+  # Multiply the nonleaves:
+  for j in 1:length(W.nonleafW)
+    Out = Out*cat(full.(W.nonleafW[j])..., dims=[1,2])
+  end
+  return Out
 end
 

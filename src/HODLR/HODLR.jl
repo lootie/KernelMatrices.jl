@@ -5,6 +5,7 @@ module HODLR
   import NearestNeighbors
   import KernelMatrices: KernelMatrix, submatrix, ACA, submatrix_nystrom, nlfisub, full
   import IterTools:      zip, chain, partition, drop, imap
+  import LinearAlgebra:  mul!, ldiv!, logdet, det
 
   include("./src/structstypes.jl")
   

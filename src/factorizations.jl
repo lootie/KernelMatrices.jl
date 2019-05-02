@@ -18,7 +18,7 @@ function ACA(M::Union{Matrix{T}, KernelMatrix{T}},
   strt      = 1
   tmprow    = M[strt,:]
   while maximum(abs, tmprow) == 0.0 && strt < maxsz
-    strt += 1
+    strt   += 1
     tmprow  = M[strt,:]
   end
   strt     == maxsz && error("Incompatible maxrank or matrix dimensions.")
@@ -26,16 +26,16 @@ function ACA(M::Union{Matrix{T}, KernelMatrix{T}},
   urow      = Base.BitSet(strt)
 
   # Get the first column in place:
-  mv, mi    = restrictedmaxabs(tmprow, ucol)
+  mv, mi = restrictedmaxabs(tmprow, ucol)
   @simd for j in eachindex(tmprow)
      @inbounds tmprow[j] /= mv
    end
-  tmpcol    = M[:,mi]
-  U[1] = tmpcol
-  V[1] = tmprow
-  znorm2    = sum(abs2,tmprow)*sum(abs2,tmpcol)
+  tmpcol = M[:,mi]
+  U[1]   = tmpcol
+  V[1]   = tmprow
+  znorm2 = sum(abs2,tmprow)*sum(abs2,tmpcol)
   push!(ucol, mi)
-  frnk = 1
+  frnk   = 1
 
   # Now loop until we have reached the desired tolerance. 
   while norm(tmprow)*norm(tmpcol) > rtol*sqrt(znorm2) && frnk < maxsz
@@ -53,9 +53,7 @@ function ACA(M::Union{Matrix{T}, KernelMatrix{T}},
     end
     # Find the next column index, use that value to normalize the row, breaking if the value is 0:
     mv, mi = restrictedmaxabs(tmprow, ucol)
-    if mv == 0.0
-      break
-    end
+    mv    == 0.0 && break
     push!(ucol, mi)
     @simd for j in eachindex(tmprow)
        @inbounds tmprow[j] /= mv
@@ -73,9 +71,9 @@ function ACA(M::Union{Matrix{T}, KernelMatrix{T}},
     for j in 1:frnk
       @inbounds znorm2 += 2.0*abs(dot(U[j], tmpcol))*abs(dot(V[j], tmprow))
     end
-    znorm2   += sum(abs2,tmprow)*sum(abs2,tmpcol)
+    znorm2 += sum(abs2,tmprow)*sum(abs2,tmpcol)
     # Increment the rank by one:
-    frnk  += 1
+    frnk   += 1
     # Push the new column and row onto the pile:
     V[frnk] = tmprow
     U[frnk] = tmpcol

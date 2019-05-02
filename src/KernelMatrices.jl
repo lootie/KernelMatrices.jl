@@ -3,6 +3,7 @@ module KernelMatrices
 
   using StaticArrays, LinearAlgebra
   import IterTools
+  import LinearAlgebra: mul!
 
   include("structstypes.jl")
 
