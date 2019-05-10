@@ -1,6 +1,6 @@
 
 using LinearAlgebra, Random, KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors, JLD, SpecialFunctions
-include("../fitting/fitting_funs.jl")
+import KernelMatrices: mtn_kernfun, mtn_kernfun_d1, mtn_kernfun_d2, mtn_kernfun_d3
 
 # Set the seed for reproducibility:
 Random.seed!(57721) 

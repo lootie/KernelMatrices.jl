@@ -6,9 +6,8 @@ Random.seed!(1618)
 
 @everywhere begin
 using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors, NLopt, SpecialFunctions
-
-# Load in the covariance functions:
-include("fitting_funs.jl")
+import KernelMatrices: ps1_kernfun, ps1_kernfun_d2, ps1_kernfun_d2_d2
+import KernelMatrices: sm1_kernfun, sm1_kernfun_d1, sm1_kernfun_d2, sm1_kernfun_d1_d2, sm1_kernfun_d2_d2
 
 # Declare the kernel function and its derivatives in the necessary forms for the profile likelihood:
 kernfun  = ps1_kernfun 

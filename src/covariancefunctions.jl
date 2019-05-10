@@ -1,17 +1,15 @@
 
-using SpecialFunctions
-
 ##
 #
 # Inverse quadratic:
 #
 ##
 
-function rat_kernfun(x1::AbstractVector, x2::AbstractVector, parms::Vector)
+function rat_kernfun(x1::AbstractVector, x2::AbstractVector, parms::Vector, numnug::Bool=true)
   out = parms[1]/abs2(1.0 + abs2(norm(x1-x2)/parms[2]))
-  if x1 == x2       # A numerical nugget. This is 
-    out += 1.0e-12  # necessary because this function is 
-  end               # analytic everywhere, including at the origin.
+  if numnug && x1 == x2   # A numerical nugget. This will make numerics easier
+    out += 1.0e-12        # because this function is analytic everywhere,
+  end                     # including at the origin, which makes numerics annoying.
   return out
 end
 
@@ -47,9 +45,9 @@ end
 #
 ##
 
-function prt_kernfun(x1::AbstractVector, x2::AbstractVector, parms::Vector)
+function prt_kernfun(x1::AbstractVector, x2::AbstractVector, parms::Vector, numnug::Bool=true)
   out = 1.0/abs2(1.0 + abs2(norm(x1-x2)/parms[1]))
-  if x1 == x2
+  if numnug && x1 == x2  # same deal about numerical nugget. See rat_kernfun.
     out += 1.0e-12
   end
   return out
@@ -158,7 +156,7 @@ function mtn_p2_dnu_dx(nu::Number, x::Number)
   return out
 end
 
-# Finite difference for now, but it isn't strictly necessary...
+# Central finite difference, because my own home-rolled bessel expansion wasn't actually more precise.
 function mtn_p2_dnu_dnu(nu::Number, x::Number)
   ep = give_eps(nu)
   (mtn_p2_dnu(nu+ep, x)-mtn_p2_dnu(nu-ep, x))/(2.0*ep)
@@ -174,7 +172,7 @@ function mtn_p3_dnu(nu::Number)
   return -out
 end
 
-# Finite difference for now, but it isn't strictly necessary...
+# Central finite difference, because my own home-rolled bessel expansion wasn't actually more precise.
 function mtn_p3_dnu_dnu(nu::Number)
   ep = give_eps(nu)
   (mtn_p3_dnu(nu+ep)-mtn_p3_dnu(nu-ep))/(2.0*ep)

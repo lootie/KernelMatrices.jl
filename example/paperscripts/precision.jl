@@ -3,9 +3,7 @@ using Distributed, Random
 
 @everywhere begin
 using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors, JLD, SpecialFunctions
-
-# Load in the scripts that define the generic functions:
-include("../fitting/fitting_funs.jl")
+import KernelMatrices: sm1_kernfun, sm1_kernfun_d1, sm1_kernfun_d2, sm1_kernfun_d1_d2, sm1_kernfun_d2_d2
 
 # Choose the kernel function:
 kernfun   = sm1_kernfun

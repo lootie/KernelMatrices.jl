@@ -8,7 +8,8 @@ Random.seed!(27182)
 
 # Load in and declare the kernel functions and exact loglik-related functions on all workers:
 @everywhere begin
-  include("../fitting/fitting_funs.jl")
+  import KernelMatrices: ps1_kernfun, ps1_kernfun_d2, ps1_kernfun_d2_d2
+  import KernelMatrices: sm1_kernfun, sm1_kernfun_d1, sm1_kernfun_d2
   kernfun   = ps1_kernfun
   dfuns     = Vector{Function}(undef, 1) ; dfuns[1] = ps1_kernfun_d2
   d2f       = Vector{Function}(undef, 1) ; d2f[1]   = ps1_kernfun_d2_d2

@@ -4,9 +4,7 @@ using Distributed, Random
 # Bring some things into scope on every worker:
 @everywhere begin
 using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, SpecialFunctions
-
-# Load in the scripts that define the generic functions:
-include("../fitting/fitting_funs.jl")
+import KernelMatrices: mt1_kernfun, mt1_kernfun_d1, mt1_kernfun_d2, mt1_kernfun_d1_d2, mt1_kernfun_d2_d2
 
 # Choose the kernel function:
 kernfun   = mt1_kernfun

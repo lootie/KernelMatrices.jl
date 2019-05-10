@@ -1,7 +1,7 @@
 
 module KernelMatrices
 
-  using StaticArrays, LinearAlgebra
+  using StaticArrays, LinearAlgebra, SpecialFunctions
   import IterTools
   import LinearAlgebra: mul!
 
@@ -12,6 +12,8 @@ module KernelMatrices
   include("utils.jl")
 
   include("factorizations.jl")
+
+  include("covariancefunctions.jl")
 
   # Its own module:
   include("HODLR/HODLR.jl")

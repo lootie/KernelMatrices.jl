@@ -3,9 +3,7 @@ using Distributed, Random, ProgressMeter
 
 @everywhere begin
 using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors, NLopt, SpecialFunctions
-
-# Load in the scripts and data files:
-include("../fitting/fitting_funs.jl")
+import KernelMatrices: mt1_kernfun, mt1_kernfun_d1, mt1_kernfun_d2, mt1_kernfun_d1_d2, mt1_kernfun_d2_d2
 
 # Declare the kernel function and its derivatives in the necessary forms:
 kernfun  = mt1_kernfun
