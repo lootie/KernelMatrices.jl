@@ -8,7 +8,6 @@ Random.seed!(27182)
 
 # Load in and declare the kernel functions and exact loglik-related functions on all workers:
 @everywhere begin
-  include("../fitting/generic_exact_functions.jl")
   include("../fitting/fitting_funs.jl")
   kernfun   = ps1_kernfun
   dfuns     = Vector{Function}(undef, 1) ; dfuns[1] = ps1_kernfun_d2
@@ -116,13 +115,13 @@ for fnm in ["bigrange", "smallrange"]
         x_t1 = 0
         nitr = 0
         if fnm == "smallrange"
-          x_t1 = @elapsed nitr, xminx = naive_trustregion(pinit, loc_s, dat_s, d2funs, popts, profile=true)
+          x_t1 = @elapsed nitr, xminx = HODLR.exact_trustregion(pinit, loc_s, dat_s, d2funs, popts, profile=true)
         elseif fnm == "bigrange"
           opt = Opt(:LD_MMA, length(pinit))
           ftol_rel!(opt, 1.0e-8)
-          min_objective!(opt, (p,g) -> exact_nlpl_objective(p, g, loc_s, dat_s, kernfun, dfuns, false))
+          min_objective!(opt, (p,g) -> HODLR.exact_nlpl_objective(p, g, loc_s, dat_s, kernfun, dfuns, false))
           x_t1 = @elapsed (xminf, xminx, xret) = optimize(opt, pinit)
-          pushfirst!(xminx, exact_nlpl_scale(xminx, loc_s, dat_s, kernfun))
+          pushfirst!(xminx, HODLR.exact_nlpl_scale(xminx, loc_s, dat_s, kernfun))
           println("That took $x_t1 seconds.")
           nitr = opt.numevals
         else
@@ -132,7 +131,7 @@ for fnm in ["bigrange", "smallrange"]
         @show xminx
         println()
         println("Computing exact Fisher information matrix:")
-        x_t2 = @elapsed xhess = exact_fisher_matrix(xminx, loc_s, dat_s, fkernfun, fdfuns)
+        x_t2 = @elapsed xhess = HODLR.exact_fisher_matrix(xminx, loc_s, dat_s, fkernfun, fdfuns)
         println("That took $x_t2 seconds.")
         @show xhess
         println()

@@ -7,7 +7,6 @@ using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, Special
 
 # Load in the scripts that define the generic functions:
 include("../fitting/fitting_funs.jl")
-include("../fitting/generic_exact_functions.jl")
 
 # Choose the kernel function:
 kernfun   = mt1_kernfun
@@ -55,11 +54,11 @@ for r in eachindex(ranks)
       println("Computing exact values once for timing...")
       println()
       # Get the exact likelihood:
-      xnl_time[j] = @elapsed exact_nll_objective(testp, Array{Float64}(undef, 0), loc_s, dat_s, kernfun, dfuns, false)
+      xnl_time[j] = @elapsed HODLR.exact_nll_objective(testp, Array{Float64}(undef, 0), loc_s, dat_s, kernfun, dfuns, false)
       # Get the exact gradient:
-      xgd_time[j] = @elapsed exact_gradient(testp, loc_s, dat_s, kernfun, dfuns)
+      xgd_time[j] = @elapsed HODLR.exact_gradient(testp, loc_s, dat_s, kernfun, dfuns)
       # Get the exact hessian:
-      xhs_time[j] = @elapsed exact_hessian(testp, loc_s, dat_s, kernfun, dfuns, d2funs)
+      xhs_time[j] = @elapsed HODLR.exact_hessian(testp, loc_s, dat_s, kernfun, dfuns, d2funs)
     end
     # Now get samples for each:
     println("Computing stochastic values $nrept times for timing...")

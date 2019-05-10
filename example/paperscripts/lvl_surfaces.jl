@@ -6,7 +6,6 @@ using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, Nearest
 
 # Load in the scripts and data files:
 include("../fitting/fitting_funs.jl")
-include("../fitting/generic_exact_functions.jl")
 
 # Declare the kernel function and its derivatives in the necessary forms:
 kernfun  = mt1_kernfun
@@ -53,7 +52,7 @@ for j in eachindex(lvls)
 end
 
 # Check the exact likelihood:
-exact_5x5 = HODLR.mapf(x->exact_nll_objective([x[1], x[2]], Float64[], loc_s, dat_s, kernfun, dfuns, false),
+exact_5x5 = HODLR.mapf(x->HOLDR.exact_nll_objective([x[1], x[2]], Float64[], loc_s, dat_s, kernfun, dfuns, false),
                             grd[1:5, 1:5], nworkers(), true)
 @show isapprox(srfs[1][1:5, 1:5], exact_5x5, rtol=1.0e-14)
 

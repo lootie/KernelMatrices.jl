@@ -27,5 +27,7 @@ module HODLR
 
   include("./src/optimization.jl")
 
+  include("./src/exactmaxlik.jl")
+
 end
 

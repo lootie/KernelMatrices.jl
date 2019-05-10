@@ -6,7 +6,6 @@ using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, Nearest
 
 # Load in the scripts that define the generic functions:
 include("../fitting/fitting_funs.jl")
-include("../fitting/generic_exact_functions.jl")
 
 # Choose the kernel function:
 kernfun   = sm1_kernfun
@@ -52,11 +51,11 @@ for (j, jpow) in enumerate(powers)
     # Fit the data:
     apx_fit_mle[k,j] = HODLR.trustregion(trup.-1.0, loc_s, dat_s, d2funs, opts)[2]
     # Get the exact HODLR hessian and gradient at the init and MLE:
-    ext_grd_far[k,j] = exact_HODLR_gradient(testp,          loc_s, dat_s, opts)
-    ext_grd_mle[k,j] = exact_HODLR_gradient(apx_fit_mle[j], loc_s, dat_s, opts)
-    ext_fsh_mle[k,j] = exact_HODLR_fisher(apx_fit_mle[j],   loc_s, dat_s, opts)
-    ext_hes_far[k,j] = exact_HODLR_hessian(testp,           loc_s, dat_s, opts, d2funs)
-    ext_hes_mle[k,j] = exact_HODLR_hessian(apx_fit_mle[j],  loc_s, dat_s, opts, d2funs)
+    ext_grd_far[k,j] = HODLR.exact_HODLR_gradient(testp,          loc_s, dat_s, opts)
+    ext_grd_mle[k,j] = HODLR.exact_HODLR_gradient(apx_fit_mle[j], loc_s, dat_s, opts)
+    ext_fsh_mle[k,j] = HODLR.exact_HODLR_fisher(apx_fit_mle[j],   loc_s, dat_s, opts)
+    ext_hes_far[k,j] = HODLR.exact_HODLR_hessian(testp,           loc_s, dat_s, opts, d2funs)
+    ext_hes_mle[k,j] = HODLR.exact_HODLR_hessian(apx_fit_mle[j],  loc_s, dat_s, opts, d2funs)
     # Get the stochastic gradient and Hessian at the init and MLE:
     apx_grd_far[k,j] = HODLR.nll_gradient(testp,            loc_s, dat_s, opts)
     apx_grd_mle[k,j] = HODLR.nll_gradient(apx_fit_mle[j],   loc_s, dat_s, opts)

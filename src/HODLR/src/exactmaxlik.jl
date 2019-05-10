@@ -1,7 +1,4 @@
 
-# These need to be in scope for this script to be loaded:
-using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR
-
 function exact_nll_objective(prms::AbstractVector, grad::Vector, locs::AbstractVector,
                              dats::AbstractVector, kernfun::Function, dfuns::Vector{Function}, vrb::Bool)
   vrb && println(prms)
@@ -287,34 +284,11 @@ function exact_fisher_matrix(prms::AbstractVector, locs::AbstractVector, dats::A
   return Symmetric(out)
 end
 
-
-function _subproblem(xv::Vector, fx::Float64, gx::Vector, hx::Symmetric{Float64, Matrix{Float64}}, pv::Vector)
-  return fx + dot(gx, pv) + 0.5*dot(pv,hx*pv)
-end
-
-function _rho(objfxp::Float64, x::Vector, fx::Float64, gx::Vector, 
-              hx::Symmetric{Float64, Matrix{Float64}}, p::Vector)
-  numr = fx - objfxp
-  denm = _subproblem(x,fx,gx,hx,zeros(length(p))) - _subproblem(x,fx,gx,hx,p)
-  return numr/denm
-end
-
-function _solve_subproblem_exact(g::Vector, B::Symmetric{Float64, Matrix{Float64}}, del::Float64)
-  lmin = max(0.0, -real(eigmin(B)))
-  lval = lmin + 0.1
-  pl   = zeros(length(g))
-  for cnt in 0:10
-    Bi    = Symmetric(B + I*lval)
-    R     = cholesky(Bi).U
-    pl    = -Bi\g
-    ql    = R\pl
-    lval += abs2(norm(pl)/norm(ql))*(norm(pl)-del)/del
-    (lval < lmin + 1.0e-10) && break
-  end
-  return pl
-end
-
-function naive_trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
+# Basically the same as the hierarchically accelerated version in optimization.jl, except this calls
+# all the exact methods here. I really should write a generic version of the function at some point
+# so I don't need two copies that are basically the same, but this is really just here for
+# troubleshooting and sanity checks, so that is low priority.
+function exact_trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
                            d2funs::Vector{Vector{Function}}, opts::HODLR.Maxlikopts; profile::Bool=false,
                            vrb::Bool=false, dmax::Float64=1.0, dini::Float64=0.5,
                            eta::Float64=0.125, rtol::Float64=1.0e-8, atol::Float64=1.0e-5,

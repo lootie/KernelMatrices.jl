@@ -1,4 +1,7 @@
 
+IF YOU ARE NOT USING A TAGGED RELEASE THAT COINCIDES WITH A SUBMISSION OF THE MANUSCRIPT, I CANNOT
+PROMISE THAT THESE SCRIPTS WILL RUN. 
+
 These are the exact scripts used to generate the various results/benchmarks in the paper
 corresponding with the release of this software suite. 
 
