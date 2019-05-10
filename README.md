@@ -133,7 +133,7 @@ You will need to install a few packages that are listed in the REQUIRE file, whi
 done with 
 ```julia
 julia> using Pkg
-julia> Pkg.add.(["StaticArrays", "IterTools", "NearestNeighbors"])
+julia> Pkg.add.(["StaticArrays", "IterTools", "NearestNeighbors", "SpecialFunctions"])
 ```
 None of those requirements are substantial or require any special care. If it all works, you will see
 (at the time of writing, at least) the word `nothing` printed four times.
