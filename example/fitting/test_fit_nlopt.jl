@@ -34,14 +34,6 @@ opts = HODLR.Maxlikopts(
 # Choose the size of the data and its true parameters:
 trup     = [1.5, 5.0]
 
-# Choose some parameters for two-stage fitting:
-ep1      = 1.0e-5
-ep2      = 1.0e-9
-rnk2     = 72
-hutch2   = 35
-lvl2     = max(3, Int64(floor(log2(nsz))) - 8)
-seed2    = 1958
-
 # Simulate some data:
 domsz    = 100.0
 pts      = map(x->SVector{2, Float64}(rand(2).*domsz), 1:nsz)

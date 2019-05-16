@@ -1,8 +1,4 @@
 
-mutable struct IncompleteCholesky{T<:Number} 
-  L::Matrix{T}
-end
-
 mutable struct KernelMatrix{T<:Number, A} 
   x1       ::AbstractVector{A}
   x2       ::AbstractVector{A}

@@ -7,7 +7,7 @@ Base.length(M::KernelMatrix{T})  where{T<:Number} = prod(size(M))
 full(M::KernelMatrix{T})         where{T<:Number} = M[:,:]::Matrix{T}
 
 function Base.getindex(M::KernelMatrix{T}, j::Int64, k::Int64)::T where{T<:Number} 
-  return K.kernel(K.x1[j], K.x2[k], K.parms)::Float64
+  return M.kernel(M.x1[j], M.x2[k], M.parms)::Float64
 end
 
 function Base.getindex(M::KernelMatrix{T}, j, k)::Array{T} where{T<:Number}
