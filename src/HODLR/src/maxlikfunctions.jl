@@ -89,7 +89,7 @@ function nll_gradient(prms::AbstractVector, locs::AbstractVector, dats::Abstract
   tim2 = @elapsed begin
   grad = stoch_gradient(nllK, HK, dats, opts.dfuns, opts.saav, plel=opts.apll, shuffle=!(opts.saa_fix))
   end
-  opts.verb && println("Gradient took                 $(round(tim2, 3)) seconds.")
+  opts.verb && println("Gradient took                 $(round(tim2, digits=3)) seconds.")
   opts.verb && println()
   return grad
 end
