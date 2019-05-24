@@ -43,8 +43,6 @@ function nll_objective(prms::AbstractVector, grad::Vector, locs::AbstractVector,
   end
   opts.verb && println("Gradient took                 $(round(tim3, digits=3)) seconds.")
   opts.verb && println()
-  opts.verb && println("All told, this objective function call took $(round(tim1+tim2+tim3, digits=3)) seconds.")
-  opts.verb && println()
   return nll
 end
 
@@ -73,8 +71,6 @@ function nlpl_objective(prms::AbstractVector, grad::Vector, locs::AbstractVector
   end
   end
   opts.verb && println("Gradient took                 $(round(tim3, digits=3)) seconds.")
-  opts.verb && println()
-  opts.verb && println("All told, this objective function call took $(round(tim1+tim2+tim3, digits=3)) seconds.")
   opts.verb && println()
   return nll
 end

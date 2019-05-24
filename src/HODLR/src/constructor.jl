@@ -29,7 +29,7 @@ function KernelHODLR(K::KernelMatrix{T}, ep::Float64, maxrank::Int64, lvl::HierL
   for j in eachindex(U)
     if nystrom
       nonleafinds[j]
-      tmpUV = mapf(x->KernelMatrices.nystrom_uvt(nlfisub(K, x), nyker), nonleafinds[j], nwrk, plel)
+      tmpUV = mapf(x->KernelMatrices.nystrom_uvt(nlfisub(K, x), nyker, plel), nonleafinds[j], nwrk, plel)
     else
       tmpUV = mapf(x->KernelMatrices.ACA(nlfisub(K, x), ep, maxrank), nonleafinds[j], nwrk, plel)
     end

@@ -31,9 +31,9 @@ function symmetricfactorize!(K::KernelHODLR{T}; plel::Bool=false, verbose::Bool=
     tmpW   = mapf(x->lrsymfact(x[1], x[2]), zip(K.V[lv], K.U[lv]), nwrk, plel)
     # Apply their inverse to all the lower levels.
     verbose && println("Applying level $lv of non-leaf inverses to each non-leaf...")
-      for lev in (lv+1):length(K.U)
-        invapply!(tmpW, lev, K.U, K.V, false)
-      end
+    for lev in (lv+1):length(K.U)
+      invapply!(tmpW, lev, K.U, K.V, false)
+    end
     # Push tmpW onto nonleafW.
     nonleafW[lv] = tmpW
   end

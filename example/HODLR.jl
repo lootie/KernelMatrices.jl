@@ -11,7 +11,7 @@ using  KernelMatrices.HODLR
 
 # Assemble the HODLR matrix:
 vrbs    = false              # Verbose flag:  Show timing?
-plel    = false              # Parallel flag: Do the operation in parallel?
+plel    = true               # Parallel flag: Do the operation in parallel?
 maxrank = 72                 # max rank:      Fix the maximum rank of the off-diagonal blocks? If no, give 0.
 tol     = 1.0e-8             # tolerance:     If doing the ACA, terminate the partial factorization at this tol.
                              #                This argument is still necessary for nystrom=true, but
@@ -42,7 +42,7 @@ println("Not-precompiled assembly of HODLR matrix with Nystrom blocks, N=$N and 
 
 println()
 println("Not-precommpiled symmetric factorization of the last matrix is done in:")
-@time HODLR.symmetricfactorize!(HK, verbose=true)
+@time HODLR.symmetricfactorize!(HK, verbose=true, plel=plel)
 
 # Now the struct HK supports fast solves and log-determinants. Example syntax is:
   # HK \ randn(N)

@@ -17,7 +17,8 @@ function saa_shuffle!(v::Vector{Vector{T}})::Nothing where{T<:Number}
   nothing
 end
 
-function givesaa(len::Int64, sz::Int64)::Vector{Vector{Float64}}
+function givesaa(len::Int64, sz::Int64; seed::Int64=0)::Vector{Vector{Float64}}
+  seed != 0 && Random.seed!(seed)
   vecs = map(x->Array{Float64}(undef, sz), 1:len)
   saa_shuffle!(vecs)
   return vecs

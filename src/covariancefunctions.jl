@@ -179,6 +179,7 @@ function mtn_p3_dnu_dnu(nu::Number)
 end
 
 function mtn_cor(nu::Number, x::Number)
+  iszero(x) && return 1.0
   mtn_p1(nu,x)*mtn_p2(nu,x)*mtn_p3(nu)
 end
 

@@ -4,7 +4,15 @@ Base.isreal(M::KernelMatrix{T})  where{T<:Number} = T<:Real
 Base.size(M::KernelMatrix{T})    where{T<:Number} = (length(M.x1), length(M.x2))
 Base.size(M::KernelMatrix{T}, j) where{T<:Number} = size(M)[j]
 Base.length(M::KernelMatrix{T})  where{T<:Number} = prod(size(M))
-full(M::KernelMatrix{T})         where{T<:Number} = M[:,:]::Matrix{T}
+
+function full(M::KernelMatrix{T}, plel::Bool=false)::Matrix{T} where{T<:Number}
+  nworkers() == 1 && return M[:,:]::Matrix{T}
+  out = SharedArray{T}(size(M, 1), size(M, 2))
+  @sync @distributed for I in CartesianIndices(out)
+    out[I] = M.kernel(M.x1[I[1]], M.x2[I[2]], M.parms)
+  end
+  return collect(out)
+end
 
 function Base.getindex(M::KernelMatrix{T}, j::Int64, k::Int64)::T where{T<:Number} 
   return M.kernel(M.x1[j], M.x2[k], M.parms)::Float64

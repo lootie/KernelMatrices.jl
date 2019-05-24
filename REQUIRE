@@ -2,4 +2,5 @@ SpecialFunctions
 StaticArrays
 IterTools
 NearestNeighbors
+SharedArrays
 julia 0.7

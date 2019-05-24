@@ -49,7 +49,7 @@ end
 
 function exact_gradient(prms::AbstractVector{Float64}, locs::AbstractVector, dats::AbstractVector,
                         kernfun::Function, dfuns::Vector{Function})
-  K   = cholesky!(KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, kernfun)))
+  K   = cholesky!(KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)))
   out = zeros(length(dfuns))
   if nworkers() > 1
     out = pmap(dfj->exact_gradient_term(prms, locs, dats, K, dfj), dfuns)

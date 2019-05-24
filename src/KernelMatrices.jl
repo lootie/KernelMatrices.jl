@@ -1,7 +1,8 @@
 
 module KernelMatrices
 
-  using StaticArrays, LinearAlgebra, SpecialFunctions
+  using StaticArrays, SpecialFunctions, SharedArrays, Distributed, LinearAlgebra
+
   import IterTools
   import LinearAlgebra: mul!
 
