@@ -6,7 +6,7 @@ Base.size(M::KernelMatrix{T}, j) where{T<:Number} = size(M)[j]
 Base.length(M::KernelMatrix{T})  where{T<:Number} = prod(size(M))
 
 function full(M::KernelMatrix{T}, plel::Bool=false)::Matrix{T} where{T<:Number}
-  nworkers() == 1 && return M[:,:]::Matrix{T}
+  !plel && return M[:,:]
   out = SharedArray{T}(size(M, 1), size(M, 2))
   @sync @distributed for I in CartesianIndices(out)
     out[I] = M.kernel(M.x1[I[1]], M.x2[I[2]], M.parms)
