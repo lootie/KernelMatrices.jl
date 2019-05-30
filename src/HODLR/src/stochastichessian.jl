@@ -32,7 +32,7 @@ function HODLR_hess_extra(K::KernelMatrix{T}, HK::KernelHODLR{T}, DKj::Derivativ
   D2Blocks = SecondDerivativeBlocks(K, dfunjk, HK.nonleafindices, HK.mrnk, plel)
   D2Leaves = SecondDerivativeLeaves(K, dfunjk, HK.leafindices, plel)
   lndmk    = K.x1[Int64.(round.(LinRange(1, size(K)[1], HK.mrnk)))]
-  Sjk      = Symmetric(full(KernelMatrices.KernelMatrix(lndmk, lndmk, K.parms, dfunjk)))
+  Sjk      = Symmetric(full(KernelMatrix(lndmk, lndmk, K.parms, dfunjk), plel))
   slv      = ifelse(profile,
                     HODLR_p_hess_slv(HK, DKj, DKk, D2Blocks, D2Leaves, Sjk, data, HK_s_data, dot(data, HK_s_data)),
                     HODLR_hess_slv(  HK, DKj, DKk, D2Blocks, D2Leaves, Sjk, data, HK_s_data))

@@ -77,81 +77,32 @@ function lrx_solterm_t(W::LowRankW{T}, v::Array{T}) where{T<:Number}
   return Xv - t_mul(W.X, (luf\Xv))
 end
 
-# This function is kind of a beast. The easiest way to understand the signature is to look at 
-# the call in invapply! below. The purpose of the function is to apply a block diagonal matrix
-# to a dense matrix or vector in a memory-efficient way. But I need to do that in a bunch of ways!
-# I need product, solve, transpose or no transpose, and so on. So I've overloaded all the relevant
-# functions, and the object "apfun" is a variable that represents the relevant FUNCTION. If you
-# follow the nested if/else statements, you'll end up at an Ax_mul_B or Ax_ldiv_B.
-function apply_block(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Matrix{T}},
-                                 AbstractVector{LU{T, Matrix{T}}}}, A::Union{AbstractMatrix{T},
-                                                                             AbstractVector{T}},
-                     solv::Bool, transp::Bool)::Union{Matrix{T}, Vector{T}} where{T<:Number}
-  # Perform a couple of type-tests:
-  Avecbol    = typeof(A)       == Vector{T}
-  # Get application fun:
-  apfun      = solv ? (transp ? _At_ldiv_B! : ldiv!) : (transp ? _At_mul_B! : mul!)
-  #apfun      = solv ? (transp ? At_ldiv_B! : LinearAlgebra.A_ldiv_B!) : (transp ? _At_mul_B! : mul!)
-  # Get indices, make sure function call makes sense:
-  szind      = transp ? 1 : 2
-  inds       = cumsum(map(x->size(x)[szind], Wvec))
-  inds[end] == size(A)[1] || error("The sizes for block-application don't work.")
-  pushfirst!(inds, 0)
-  # Perform block application:
-  Out = Avecbol ? Array{T}(undef, length(A)) : Array{T}(undef, size(A))
-  if Avecbol
-    for j in eachindex(Wvec)
-      @inbounds strt     = inds[j]+1
-      @inbounds stop     = inds[j+1]
-      @inbounds apfun(view(Out, strt:stop), Wvec[j], A[strt:stop])
-    end
-  else
-    for j in eachindex(Wvec)
-      @inbounds strt     = inds[j]+1
-      @inbounds stop     = inds[j+1]
-      @inbounds apfun(view(Out, strt:stop, :), Wvec[j], A[strt:stop, :])
-    end
-  end
-  return Out
-end
-
-# The big helper function. Further, this is likely the real bottleneck in the code. Because you
-# can't do A_mul_B!(A, B) and just update A or whatever, I have to re-assign this memory. Which
-# I imagine is pretty slow, once the matrix gets big enough.
+# This function really could use a decent parallel implementation. But I just don't really see how
+# to do that considering that I'm mutating memory all over the place.
 function invapply!(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Matrix{T}},
                                AbstractVector{LU{T, Matrix{T}}}}, lvl::Int64,
-                   Uvec::Vector{Vector{Matrix{Float64}}}, Vvec::Vector{Vector{Matrix{Float64}}},
-                   parallel::Bool=false)::Nothing where{T<:Number}
-  # This parallel implementation is oddly slower than the serial-loop one. I'm not entirely sure why
-  # that is, but if I had to guess I have done some poor coding and extra copies are being made or 
-  # something. Alternatively, my things are complicated enough that the functional tools are unhappy.
-  if parallel
-    jmp   = Int64(length(Wvec)/(2*length(Uvec[lvl])))
-    WvecV = imap(collect, partition(Wvec, jmp, 2*jmp))
-    WvecU = imap(collect, partition(IterTools.drop(Wvec, jmp), jmp, 2*jmp))
-    Vvec[lvl] = map(x->apply_block(x[1], x[2], true, false), zip(WvecV, Vvec[lvl]))
-    Uvec[lvl] = map(x->apply_block(x[1], x[2], true, false), zip(WvecU, Uvec[lvl]))
-  else
-    jmp = Int64(length(Wvec)/(2*length(Uvec[lvl])))
-    ind = collect(1:jmp)
-    for j in 1:2*length(Uvec[lvl])
-      index = div(j+1, 2)
-      if isodd(j)
-        @inbounds Vvec[lvl][index] .= apply_block(view(Wvec, ind), Vvec[lvl][index], true, false) 
-      else
-        @inbounds Uvec[lvl][index] .= apply_block(view(Wvec, ind), Uvec[lvl][index], true, false) 
-      end
-      increment!(ind, jmp)
+                   Uvec::Vector{Vector{Matrix{Float64}}}, 
+                   Vvec::Vector{Vector{Matrix{Float64}}})::Nothing where{T<:Number}
+  jmp = Int64(length(Wvec)/(2*length(Uvec[lvl])))
+  ind = collect(1:jmp)
+  for j in 1:2*length(Uvec[lvl])
+    index = div(j+1, 2)
+    if isodd(j)
+      @inbounds ldiv!(BDiagonal(Wvec[ind]), Vvec[lvl][index])
+    else
+      @inbounds ldiv!(BDiagonal(Wvec[ind]), Uvec[lvl][index])
     end
+    increment!(ind, jmp)
   end
   nothing
 end
 
-function DBlock(K::KernelMatrix{T}, dfun::Function, lndmks::AbstractVector)::DerivativeBlock{T} where{T<:Number}
-  K1p  = full(KernelMatrix(K.x1, lndmks, K.parms, K.kernel))
-  Kp2  = full(KernelMatrix(lndmks, K.x2, K.parms, K.kernel))
-  K1pd = full(KernelMatrix(K.x1, lndmks, K.parms, dfun))
-  Kp2d = full(KernelMatrix(lndmks, K.x2, K.parms, dfun))
+function DBlock(K::KernelMatrix{T}, dfun::Function, lndmks::AbstractVector, 
+                plel::Bool=false)::DerivativeBlock{T} where{T<:Number}
+  K1p  = full(KernelMatrix(K.x1, lndmks, K.parms, K.kernel), plel)
+  Kp2  = full(KernelMatrix(lndmks, K.x2, K.parms, K.kernel), plel)
+  K1pd = full(KernelMatrix(K.x1, lndmks, K.parms, dfun), plel)
+  Kp2d = full(KernelMatrix(lndmks, K.x2, K.parms, dfun), plel)
   return DerivativeBlock(K1p, K1pd, Kp2, Kp2d)
 end
 
@@ -179,10 +130,10 @@ function DBlock_full(B::DerivativeBlock{T}, Kp::Cholesky{T, Matrix{T}},
   return Out
 end
 
-function SBlock(K::KernelMatrix{T}, djk::Function, 
-                lndmks::AbstractVector)::SecondDerivativeBlock{T} where{T<:Number}
-  K1pdk = full(KernelMatrix(K.x1, lndmks, K.parms, djk))
-  Kp2dk = full(KernelMatrix(lndmks, K.x2, K.parms, djk))
+function SBlock(K::KernelMatrix{T}, djk::Function, lndmks::AbstractVector, 
+                plel::Bool=false)::SecondDerivativeBlock{T} where{T<:Number}
+  K1pdk = full(KernelMatrix(K.x1, lndmks, K.parms, djk), plel)
+  Kp2dk = full(KernelMatrix(lndmks, K.x2, K.parms, djk), plel)
   return SecondDerivativeBlock(K1pdk, Kp2dk)
 end
 

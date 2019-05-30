@@ -12,12 +12,11 @@ function symmetricfactorize!(K::KernelHODLR{T}; plel::Bool=false, verbose::Bool=
   verbose && println("Computing factors for leaves...")
   LW    = mapf(symfact, K.L,             nwrk, plel)
   LWf   = mapf(lu,  LW,                  nwrk, plel)
-  LWtf  = mapf(lu,  imap(transpose, LW), nwrk, plel)
 
   # Now, apply the leaf inverses blockwise to each of the U factors at all levels.
   verbose && println("Applying factor inverse to each non-leaf...")
   for lv in eachindex(K.U)
-    invapply!(LWf, lv, K.U, K.V, false)
+    invapply!(LWf, lv, K.U, K.V)
   end
 
   # Declare the array for all the non-leaf symmetric factor terms:
@@ -32,14 +31,14 @@ function symmetricfactorize!(K::KernelHODLR{T}; plel::Bool=false, verbose::Bool=
     # Apply their inverse to all the lower levels.
     verbose && println("Applying level $lv of non-leaf inverses to each non-leaf...")
     for lev in (lv+1):length(K.U)
-      invapply!(tmpW, lev, K.U, K.V, false)
+      invapply!(tmpW, lev, K.U, K.V)
     end
     # Push tmpW onto nonleafW.
     nonleafW[lv] = tmpW
   end
   
   # Put it in place:
-  K.W = FactorHODLR{T}(LW, LWf, LWtf, nonleafW)
+  K.W = FactorHODLR{T}(LW, LWf, nonleafW)
 
   # Ditch the U, V, as they have been overwritten and are no longer helpful.
   verbose && @warn("U and V abandoned after overwriting")

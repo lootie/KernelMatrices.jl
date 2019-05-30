@@ -96,7 +96,7 @@ function nystrom_uvt(K::KernelMatrix{T}, N::NystromKernel{T},
   K1  = KernelMatrix(K.x1, N.lndmk, K.parms, K.kernel)
   K2  = KernelMatrix(N.lndmk, K.x2, K.parms, K.kernel)
   U   = full(K1, plel)
-  V   = transpose(N.F\full(K2))
+  V   = transpose(N.F\full(K2, plel))
   return U,V
 end
 

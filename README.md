@@ -112,9 +112,9 @@ complete and heavily commented scripts demonstrating how to do that.
 # Usage
 
 **Unless you are planning to hack on the source code, I suggest you use git checkout on a tagged
-release. Version 0.3 is the most recent release and corresponds with the revised submission of the
-manuscript.** To re-create results and figures from the paper, look in the directories
-`./examples/paperscripts/` and `./examples/paperscripts/figures/` respectively.
+release. Version 0.5 is the most recent release.** To re-create results and figures from the paper
+(which corresponds to version 0.3, so please use that version to run this code), look in the
+directories `./examples/paperscripts/` and `./examples/paperscripts/figures/` respectively.
 
 **If you want to re-compute results from the paper and then potentially re-create the figures,
 please run the files from the directory they are located in. All of them use relative paths for

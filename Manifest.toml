@@ -15,6 +15,14 @@ git-tree-sha1 = "c7361ce8a2129f20b0e05a89f7070820cfed6648"
 uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
 version = "0.5.4"
 
+[[BlockDiagonal]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "e844fc7e12ea0cfc6502f827764fdc1d3a07936c"
+repo-rev = "master"
+repo-url = "https://bitbucket.org/cgeoga/BlockDiagonal.jl/src/"
+uuid = "1b959d4a-82ef-11e9-2b51-1f64d30f5fc4"
+version = "0.1.0"
+
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
 git-tree-sha1 = "84aa74986c5b9b898b0d1acaf3258741ee64754f"

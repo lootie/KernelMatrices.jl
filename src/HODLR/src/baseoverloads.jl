@@ -26,6 +26,8 @@ function det(W::LowRankW{T})::Float64 where{T<:Number}
   return det(I + t_mul(W.M, W.M)*W.X)
 end
 
+Base.adjoint(M::LowRankW{T}) where{T<:Number} = LowRankW(M.M, Matrix{Float64}(M.X'))
+
 function full(K::KernelHODLR{T})::Matrix{T} where{T<:Number}
   Out = Array{T}(undef, size(K))
   for (j,pt) in enumerate(K.leafindices)
@@ -63,6 +65,12 @@ function _At_mul_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) whe
   return target
 end
 
+function ldiv!(W::LowRankW{T}, target::StridedArray) where{T<:Number}
+  target .-= W.M*lrx_solterm(W, W.M'target)
+  return target
+end
+
+
 function ldiv!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  
@@ -91,10 +99,11 @@ function mul!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) wher
   # Apply the nonleafW vectors in the correct order:
   tmp = deepcopy(src)
   for j in length(W.nonleafW):-1:1
-    tmp = apply_block(W.nonleafW[j], tmp, false, false)
+    mul!(target, BDiagonal(W.nonleafW[j]), tmp)
+    tmp .= target
   end
   # Apply the leaf vectors:
-  tmp = apply_block(W.leafW, tmp, false, false)
+  mul!(tmp, BDiagonal(W.leafW), target)
   fillall!(target, tmp)
   return target
 end
@@ -103,13 +112,12 @@ function _At_mul_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the leaf vectors:
-  tmp = deepcopy(src)
-  tmp = apply_block(W.leafW, tmp, false, true)
+  tmp = BDiagonal(W.leafW)'src
   # Apply the nonleafW vectors in the correct order:
   for j in eachindex(W.nonleafW)
-    tmp = apply_block(W.nonleafW[j], tmp, false, true)
+    mul!(target, BDiagonal(W.nonleafW[j])', tmp)
+    tmp .= target
   end
-  fillall!(target, tmp)
   return target
 end
 
@@ -121,27 +129,22 @@ function ldiv!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) whe
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the leaf vectors:
-  tmp = deepcopy(src)
-  tmp = apply_block(W.leafWf, tmp, true, false)
+  ldiv!(target, BDiagonal(W.leafWf), src)
   # Apply the nonleafW vectors in the correct order:
   for j in eachindex(W.nonleafW)
-    tmp = apply_block(W.nonleafW[j], tmp, true, false)
+    ldiv!(BDiagonal(W.nonleafW[j]), target)
   end
-  fillall!(target, tmp)
   return target
 end
 
 function _At_ldiv_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
-  # Zero out the target vector, get tmp vector:
-  fill!(target, zero(eltype(target)))
+  target .= src
   # Apply the nonleafW vectors in the correct order:
-  tmp = deepcopy(src)
   for j in length(W.nonleafW):-1:1
-    tmp = apply_block(W.nonleafW[j], tmp, true, true)
+    ldiv!(BDiagonal(W.nonleafW[j])', target)
   end
   # Apply the leaf vectors:
-  tmp = apply_block(W.leafWtf, tmp, true, false)
-  fillall!(target, tmp)
+  ldiv!(BDiagonal(W.leafWf)', target)
   return target
 end
 
@@ -255,23 +258,23 @@ end
 #
 ##
 
-function LinearAlgebra.:*(K::KernelHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
-  target = Array{T}(undef, length(source))
-  return mul!(target, K, source)
+function LinearAlgebra.:*(K::KernelHODLR{T}, src::Vector{T})::Vector{T} where{T<:Number}
+  target = Array{T}(undef, length(src))
+  return mul!(target, K, src)
 end
 
-function LinearAlgebra.:*(W::FactorHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
-  target = Array{T}(undef, length(source))
-  return mul!(target, W, source)
+function LinearAlgebra.:*(W::FactorHODLR{T}, src::Vector{T})::Vector{T} where{T<:Number}
+  target = Array{T}(undef, length(src))
+  return mul!(target, W, src)
 end
 
-function LinearAlgebra.:\(K::KernelHODLR{T}, source::Vector{T})::Vector{T} where{T<:Number}
-  target = Array{T}(undef, length(source))
-  return ldiv!(target, K, source)
+function LinearAlgebra.:\(K::KernelHODLR{T}, src::Vector{T})::Vector{T} where{T<:Number}
+  target = Array{T}(undef, length(src))
+  return ldiv!(target, K, src)
 end
 
 function LinearAlgebra.:*(W::LowRankW{T}, src::Vector{T})::Vector{T} where{T<:Number}
-  target = Array{T}(undef, length(source))
+  target = Array{T}(undef, length(src))
   return mul!(target, W, src)
 end
 
@@ -286,7 +289,7 @@ function LinearAlgebra.:*(DK::DerivativeHODLR{T}, src::Vector{T})::Vector{T} whe
 end
 
 function LinearAlgebra.:\(W::LowRankW{T}, src::Vector{T})::Vector{T} where{T<:Number}
-  target = Array{T}(undef, length(source))
+  target = Array{T}(undef, length(src))
   return ldiv!(target, W, src)
 end
 

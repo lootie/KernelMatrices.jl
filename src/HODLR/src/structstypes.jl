@@ -26,7 +26,6 @@ end
 mutable struct FactorHODLR{T<:Number} <: LinearAlgebra.Factorization{T}
   leafW          :: Vector{Matrix{T}}
   leafWf         :: Vector{LU{T, Matrix{T}}}
-  leafWtf        :: Vector{LU{T, Matrix{T}}}
   nonleafW       :: Vector{Vector{LowRankW{T}}}
 end
 
