@@ -9,8 +9,8 @@ end
 
 # Since we are computing the exact HODLR derivative, there are actually not too many tweakable
 # options we have to think about. This is a simple call.
-function HODLR_grad_term(K::KernelMatrix{T}, HK::KernelHODLR{T}, dfn::Function, dat::Vector{T}, 
-                         vecs::Vector{Vector{T}}; plel::Bool=false, verbose::Bool=false) where{T<:Number}
+function HODLR_grad_term(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dfn::Function, dat::Vector{T}, 
+                         vecs::Vector{Vector{T}}; plel::Bool=false, verbose::Bool=false) where{T<:Number,N,A,Fn}
   # Get the EXACT HODLR derivative:
   verbose && println("Assembling derivative matrix...")
   HKj       = DerivativeHODLR(K, dfn, HK, plel=plel)
@@ -24,9 +24,9 @@ end
 
 # You need to supply a vector of derivative functions here, which is maybe a little wacky.
 # But otherwise, pretty straightforward function.
-function stoch_gradient(K::KernelMatrix{T}, HK::KernelHODLR{T}, dat::Vector{T}, dfuns::Vector{Function}, 
+function stoch_gradient(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dat::Vector{T}, dfuns::Vector{Function}, 
                         vecs::Vector{Vector{T}}; plel::Bool=false, verbose::Bool=false, 
-                        shuffle::Bool=false)::Vector{T} where{T<:Number}
+                        shuffle::Bool=false)::Vector{T} where{T<:Number,N,A,Fn}
   # Test stuff:
   HK.U == nothing                  || error("The matrix needs to be factorized for this to work.")
   length(dfuns) == length(K.parms) || error("You didn't supply the right number of gradient funs.")
@@ -40,9 +40,9 @@ function stoch_gradient(K::KernelMatrix{T}, HK::KernelHODLR{T}, dat::Vector{T}, 
 end
 
 # This is the gradient term for the PROFILE log likelihood.
-function HODLR_p_grad_term(K::KernelMatrix{T}, HK::KernelHODLR{T}, dfn::Function, dat::Vector{T},
+function HODLR_p_grad_term(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dfn::Function, dat::Vector{T},
                            vecs::Vector{Vector{T}}; plel::Bool=false, verbose::Bool=false, 
-                           seed::Int64=0) where{T<:Number}
+                           seed::Int64=0) where{T<:Number,N,A,Fn}
   # Get the EXACT HODLR derivative:
   verbose && println("Assembling derivative matrix...")
   HKj       = DerivativeHODLR(K, dfn, HK, plel=plel)
@@ -59,10 +59,10 @@ end
 
 # You need to supply a vector of derivative functions here, which is maybe a little wacky.
 # But otherwise, pretty straightforward function.
-function stoch_profile_gradient(K::KernelMatrix{T}, HK::KernelHODLR{T}, dat::Vector{T},
+function stoch_profile_gradient(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dat::Vector{T},
                                 dfuns::Vector{Function}, vecs::Vector{Vector{T}};
                                 plel::Bool=false, verbose::Bool=false,
-                                shuffle::Bool=false)::Vector{T} where{T<:Number}
+                                shuffle::Bool=false)::Vector{T} where{T<:Number,N,A,Fn}
   # Test stuff:
   HK.U == nothing                  || error("The matrix needs to be factorized for this to work.")
   length(dfuns) == length(K.parms) || error("You didn't supply the right number of gradient funs.")

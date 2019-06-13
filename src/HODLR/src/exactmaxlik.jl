@@ -49,7 +49,7 @@ end
 
 function exact_gradient(prms::AbstractVector{Float64}, locs::AbstractVector, dats::AbstractVector,
                         kernfun::Function, dfuns::Vector{Function})
-  K   = cholesky!(KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)))
+  K   = cholesky!(KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, kernfun)))
   out = zeros(length(dfuns))
   if nworkers() > 1
     out = pmap(dfj->exact_gradient_term(prms, locs, dats, K, dfj), dfuns)
@@ -62,10 +62,10 @@ function exact_gradient(prms::AbstractVector{Float64}, locs::AbstractVector, dat
 end
 
 function exact_HODLR_gradient_term(prms::AbstractVector{Float64}, locs::AbstractVector,
-                                   dats::AbstractVector, K::KernelMatrices.KernelMatrix{Float64},
+                                   dats::AbstractVector, K::KernelMatrix{Float64,N,A,Fn},
                                    HK::HODLR.KernelHODLR{Float64},
                                    HKf::LinearAlgebra.Cholesky{Float64,Matrix{Float64}},
-                                   drfun::Function, plel::Bool=false)::Float64
+                                   drfun::Function, plel::Bool=false)::Float64 where{N,A,Fn}
   dK  = KernelMatrices.full(HODLR.DerivativeHODLR(K, drfun, HK, plel=plel))
   return 0.5*(tr(HKf\dK) - dot(dats, HKf\(dK*(HKf\dats))))
 end
@@ -168,13 +168,12 @@ end
 
 function exact_HODLR_hessian_term(prms::AbstractVector{Float64}, locs::AbstractVector,
                                   dats::AbstractVector, opts::HODLR.Maxlikopts,
-                                  K::KernelMatrices.KernelMatrix{Float64},
+                                  K::KernelMatrices.KernelMatrix{Float64,N,A,Fn},
                                   HK::HODLR.KernelHODLR{Float64} ,
                                   HKf::LinearAlgebra.Cholesky{Float64, Matrix{Float64}},
                                   dKj_::HODLR.DerivativeHODLR{Float64}, 
-                                  dKj::Matrix{Float64},
-                                  drfunk::Function,
-                                  drfunjk::Function)::Float64
+                                  dKj::Matrix{Float64}, drfunk::Function,
+                                  drfunjk::Function)::Float64 where{N,A,Fn}
   if !(typeof(drfunjk) == HODLR.ZeroFunction)
     # Get all the required derivative matrices in place:
     dKk_  = HODLR.DerivativeHODLR(K, drfunk, HK, plel=opts.apll)

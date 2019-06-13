@@ -1,41 +1,35 @@
 
-mutable struct KernelMatrix{T<:Number, A} 
+mutable struct KernelMatrix{T, N, A, Fn} 
   x1       ::AbstractVector{A}
   x2       ::AbstractVector{A}
-  parms    ::AbstractVector{T}
-  kernel   ::Function
+  parms    ::SVector{N,T}
+  kernel   ::Fn
 end
 
-mutable struct NystromKernel{T<:Number}  <: Function 
-  Kernel::Function
-  parms::Vector{T}
-  lndmk::AbstractVector
-  tmp1 ::Vector{T}
-  tmp2 ::Vector{T}
+function KernelMatrix(pts, pts2, prms::Vector, fn::Function)
+  typeof(pts) == typeof(pts2) || error("Type of pts and pts2 must agree.")
+  A = eltype(pts)
+  T = eltype(prms)
+  return KernelMatrix{T,length(prms),A,typeof(fn)}(pts, pts2, SVector{length(prms), T}(prms), fn)
+end
+
+mutable struct NystromKernel{T, N, A, Fn}  <: Function 
+  Kernel::Fn
+  parms::SVector{N,T}
+  lndmk::Vector{A}
   F::Union{Cholesky{T, Matrix{T}}, BunchKaufman{T, Matrix{T}}}
 end
 
-function NystromKernel(T::Type, kern::Function, landmark::AbstractVector, 
+function NystromKernel(kern::Function, landmark::AbstractVector, 
                        parms::AbstractVector, ispd::Bool)::NystromKernel
+  T   = eltype(parms)
   M   = zeros(T, length(landmark), length(landmark))
-  @inbounds for j in eachindex(landmark)
-    @inbounds for k in eachindex(landmark)
-      M[j,k] = kern(landmark[j], landmark[k], parms)
+  for j in eachindex(landmark)
+    for k in eachindex(landmark)
+      @inbounds M[j,k] = kern(landmark[j], landmark[k], parms)
     end
   end
   F = ispd ? cholesky!(Symmetric(M)) : bkfact!(Symmetric(M))
-  tmp1 = Array{T}(undef, length(landmark))
-  tmp2 = Array{T}(undef, length(landmark))
-  return NystromKernel{T}(kern, parms, landmark, tmp1, tmp2, F)
-end
-
-function (NK::NystromKernel{T})(x::A, y::A, pr::Vector{T}) where{T<:Number, A<:AbstractVector} 
-  pr == NK.parms || error("Parms don't match: need to re-generate nystrom matrix.")
-  @inbounds for j in eachindex(NK.tmp1)
-    NK.tmp1[j] = NK.Kernel(x, NK.lndmk[j], NK.parms)
-    NK.tmp2[j] = NK.Kernel(NK.lndmk[j], y, NK.parms)
-  end
-  A_ldiv_B!(NK.F, NK.tmp2)
-  return dot(NK.tmp1, NK.tmp2)
+  return NystromKernel(kern, parms, landmark, F)
 end
 

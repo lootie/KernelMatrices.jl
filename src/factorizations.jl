@@ -2,8 +2,8 @@
 # This is the adaptive cross-approximation (ACA), I think originally proposed by Bebendorf.
 # This implementation is an attempt to be as clean and readable as possible, but has admittedly
 # grown up a little bit. I probably should split some of these things into helper functions.
-function ACA(M::Union{Matrix{T}, KernelMatrix{T}}, 
-             rtol::Float64, maxrank::Int64=0)::NTuple{2, Matrix{T}} where{T<:Number}
+function ACA(M::Union{Matrix{T}, KernelMatrix{T,N,A,Fn}}, rtol::Float64, 
+             maxrank::Int64=0)::NTuple{2, Matrix{T}} where{T<:Number,N,A,Fn}
 
   # Create the maximum size cutoff:
   maxsz     = (maxrank == 0 ? minimum(size(M)) : min(maxrank, minimum(size(M))))
@@ -90,13 +90,13 @@ function ACA(M::Union{Matrix{T}, KernelMatrix{T}},
 
 end
 
-function nystrom_uvt(K::KernelMatrix{T}, N::NystromKernel{T}, 
-                     plel::Bool)::Tuple{Matrix{T},Matrix{T}} where{T<:Number}
-  typeof(K.x1[1]) == typeof(N.lndmk[1]) || error("Nystrom landmarks don't agree with K points.")
-  K1  = KernelMatrix(K.x1, N.lndmk, K.parms, K.kernel)
-  K2  = KernelMatrix(N.lndmk, K.x2, K.parms, K.kernel)
+function nystrom_uvt(K::KernelMatrix{T,N,A,Fn}, NK::NystromKernel{T,N,A,Fn}, 
+                     plel::Bool)::Tuple{Matrix{T},Matrix{T}} where{T<:Number,N,A,Fn}
+  typeof(K.x1[1]) == typeof(NK.lndmk[1]) || error("Nystrom landmarks don't agree with K points.")
+  K1  = KernelMatrix(K.x1, NK.lndmk, K.parms, K.kernel)
+  K2  = KernelMatrix(NK.lndmk, K.x2, K.parms, K.kernel)
   U   = full(K1, plel)
-  V   = transpose(N.F\full(K2, plel))
+  V   = transpose(NK.F\full(K2, plel))
   return U,V
 end
 

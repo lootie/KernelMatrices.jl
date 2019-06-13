@@ -25,10 +25,10 @@ function HODLR_p_hess_slv(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, DKk::Deri
   return length(data)*ret
 end
 
-function HODLR_hess_extra(K::KernelMatrix{T}, HK::KernelHODLR{T}, DKj::DerivativeHODLR{T},
+function HODLR_hess_extra(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, DKj::DerivativeHODLR{T},
                           DKk::DerivativeHODLR{T}, dfunjk::Function, data::Vector{T},
                           HK_s_data::Vector{T}, vecs::Vector{Vector{T}}; profile::Bool=false,
-                          plel::Bool=false) where{T<:Number}
+                          plel::Bool=false) where{T<:Number,N,A,Fn}
   D2Blocks = SecondDerivativeBlocks(K, dfunjk, HK.nonleafindices, HK.mrnk, plel)
   D2Leaves = SecondDerivativeLeaves(K, dfunjk, HK.leafindices, plel)
   lndmk    = K.x1[Int64.(round.(LinRange(1, size(K)[1], HK.mrnk)))]
@@ -73,8 +73,8 @@ function HODLR_hess_tr2(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, DKk::Deriva
   return dot(tp1, Deriv2mul(DKj, DKk, D2B2, D2BL, Sjk, tp1))
 end
 
-function stoch_fisher(K::KernelMatrix{T}, HK::KernelHODLR{T}, DKs::Vector{DerivativeHODLR{T}},
-                      vecs::Vector{Vector{T}}; plel::Bool=false, shuffle::Bool=false) where{T<:Number}
+function stoch_fisher(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, DKs::Vector{DerivativeHODLR{T}},
+                      vecs::Vector{Vector{T}}; plel::Bool=false, shuffle::Bool=false) where{T<:Number,N,A,Fn}
   # Some tests to make sure the call is legit:
   HK.U        == nothing         || error("The matrix needs to be factorized.")
   length(DKs) == length(K.parms) || error("You didn't supply the right number of gradient funs.")
@@ -98,10 +98,10 @@ function stoch_fisher(K::KernelMatrix{T}, HK::KernelHODLR{T}, DKs::Vector{Deriva
   return Symmetric(Out)
 end
 
-function stoch_hessian(K::KernelMatrix{T}, HK::KernelHODLR{T}, dat::Vector{T},
+function stoch_hessian(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dat::Vector{T},
                       d1funs::Vector{Function}, d2funs::Vector{Vector{Function}},
                       vecs::Vector{Vector{T}}; plel::Bool=false, verbose::Bool=false,
-                      shuffle::Bool=false, profile::Bool=false) where{T<:Number}
+                      shuffle::Bool=false, profile::Bool=false) where{T<:Number,N,A,Fn}
   # Some tests to make sure the call is legit:
   d2lentest = Int64(length(d1funs)*(length(d1funs)+1)/2)
   HK.U           == nothing         || error("The matrix needs to be factorized.")
