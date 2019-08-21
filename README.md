@@ -110,33 +110,14 @@ complete and heavily commented scripts demonstrating how to do that.
 
 
 # Usage
-
-**Unless you are planning to hack on the source code, I suggest you use git checkout on a tagged
-release. Version 0.5 is the most recent release.** To re-create results and figures from the paper
-(which corresponds to version 0.3, so please use that version to run this code), look in the
-directories `./examples/paperscripts/` and `./examples/paperscripts/figures/` respectively.
-
-**If you want to re-compute results from the paper and then potentially re-create the figures,
-please run the files from the directory they are located in. All of them use relative paths for
-output storage.**
-
-All of the code in this repository is defined in a module, which is most easily used the way you
-would use an official julia package. To facilitate that, I suggest adding the directory to your
-LOAD_PATH, which can most easily be done by adding
+This package is unregistered, so please install with
 ```julia
-push!(LOAD_PATH, "/path/to/the/src/directory/")
+Pkg> add git://bitbucket.org/cgeoga/KernelMatrices.jl.git #v0.6.0
 ```
-to your `~/.julia/config/startup.jl` file. You could also symlink the repository in
-`~/.julia/packages`, but I don't recommend doing that because it seems to confuse Pkg more.
-
-You will need to install a few packages that are listed in the REQUIRE file, which can easily be
-done with 
-```julia
-julia> using Pkg
-julia> Pkg.add.(["StaticArrays", "IterTools", "NearestNeighbors", "SpecialFunctions", "SharedArrays"])
-```
-None of those requirements are substantial or require any special care. If it all works, you will see
-(at the time of writing, at least) the word `nothing` printed four times.
+The figures and results of the paper were generated with version `0.3`, so if you want to run that
+exact code again please add that version instead. If you want to re-compute results from the paper
+and then potentially re-create the figures, please run the files from the directory they are located
+in. All of them use relative paths for output storage.
 
 Once you have done those things, you can access the two modules---`KernelMatrices` and
 `KernelMatrices.HODLR`---with
@@ -146,6 +127,9 @@ julia> using KernelMatrices, KernelMatrices.HODLR
 **For both modules, nothing is exported to the namespace, so you will need to call every function
 with `KernelMatrices.foo()`, or `HODLR.foo()`, or `KernelMatrices.HODLR.foo()` if you do not bring
 the module `HODLR` into the namespace with `using KernelMatrices.HODLR`.**
+
+**Please see the example files, which give complete examples of performing optimization with first
+and second derivatives**.
 
 
 # Changes to expect in the next release
