@@ -104,7 +104,7 @@ function mul!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) wher
   end
   # Apply the leaf vectors:
   mul!(tmp, BDiagonal(W.leafW), target)
-  fillall!(target, tmp)
+  target .= tmp
   return target
 end
 

@@ -9,7 +9,7 @@ function full(M::KernelMatrix{T,N,A,Fn}, plel::Bool=false)::Matrix{T} where{T<:N
   !plel && return M[:,:]
   out = SharedArray{T}(size(M, 1), size(M, 2))
   @sync @distributed for I in CartesianIndices(out)
-    out[I] = M.kernel(M.x1[I[1]], M.x2[I[2]], M.parms)
+    @inbounds out[I] = M.kernel(M.x1[I[1]], M.x2[I[2]], M.parms)
   end
   return collect(out)
 end

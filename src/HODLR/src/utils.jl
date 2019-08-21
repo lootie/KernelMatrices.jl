@@ -24,20 +24,6 @@ function givesaa(len::Int64, sz::Int64; seed::Int64=0)::Vector{Vector{Float64}}
   return vecs
 end
 
-function increment!(V::Vector{Int64}, step::Int64)::Nothing
-  for k in eachindex(V)
-    @inbounds V[k] += step
-  end
-  nothing
-end
-
-function fillall!(target::AbstractVector{T}, src::AbstractVector{T})::Nothing where{T}
-  for j in eachindex(target)
-    @inbounds setindex!(target, src[j], j)
-  end
-  nothing
-end
-
 # Must be of a Pos-Def Symmetric matrix!
 function symfact(A::Symmetric{T, Matrix{T}})::Matrix{T} where{T<:Number}
   factd = eigen(A)
@@ -92,7 +78,7 @@ function invapply!(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Matri
     else
       @inbounds ldiv!(BDiagonal(Wvec[ind]), Uvec[lvl][index])
     end
-    increment!(ind, jmp)
+    ind .+= jmp
   end
   nothing
 end
