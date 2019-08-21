@@ -1,7 +1,7 @@
 name = "KernelMatrices"
 uuid = "b172bcd2-82ed-11e9-108e-f9294c34b9e6"
 authors = ["Chris Geoga <cgeoga@protonmail.com>"]
-version = "0.5.0"
+version = "0.6.0"
 
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
