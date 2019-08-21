@@ -119,8 +119,8 @@ exact code again please add that version instead. If you want to re-compute resu
 and then potentially re-create the figures, please run the files from the directory they are located
 in. All of them use relative paths for output storage.
 
-Once you have done those things, you can access the two modules---`KernelMatrices` and
-`KernelMatrices.HODLR`---with
+The code is organized into a module `KernelMatrices` and a sub-module `KernelMatrices.HODLR`, which
+you can access with
 ```julia
 julia> using KernelMatrices, KernelMatrices.HODLR
 ```
