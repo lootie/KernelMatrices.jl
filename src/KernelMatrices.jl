@@ -21,10 +21,3 @@ module KernelMatrices
 
 end
 
-try 
-  using BlockDiagonal
-catch
-  println("Installing small unregistered dependency BlockDiagonal.jl (https://bitbucket.org/cgeoga/blockdiagonal.jl")
-  include("../deps/build.jl")
-end
-

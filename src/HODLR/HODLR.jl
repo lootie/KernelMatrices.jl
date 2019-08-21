@@ -1,13 +1,14 @@
 
 module HODLR
 
-
-  using  StaticArrays, KernelMatrices, Distributed, Random, SharedArrays, LinearAlgebra, BlockDiagonal
+  using  StaticArrays, KernelMatrices, Distributed, Random, SharedArrays, LinearAlgebra
 
   import NearestNeighbors
   import KernelMatrices: KernelMatrix, submatrix, ACA, submatrix_nystrom, nlfisub, full, nystrom_uvt, NystromKernel
   import IterTools:      zip, chain, partition, drop, imap
-  import LinearAlgebra:  mul!, ldiv!, logdet, det
+  import LinearAlgebra:  factorize, mul!, ldiv!, logdet, det, adjoint, transpose, inv, tr
+
+  include("./src/BlockDiagonal.jl")
 
   include("./src/structstypes.jl")
   
