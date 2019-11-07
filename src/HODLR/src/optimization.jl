@@ -1,5 +1,6 @@
 
-function _subproblem(xv::Vector, fx::Float64, gx::Vector, hx::Symmetric{Float64, Matrix{Float64}}, pv::Vector)
+function _subproblem(xv::Vector, fx::Float64, gx::Vector, 
+                     hx::Symmetric{Float64, Matrix{Float64}}, pv::Vector)
   return fx + dot(gx, pv) + 0.5*dot(pv,hx*pv)
 end
 
@@ -10,7 +11,8 @@ function _rho(objfxp::Float64, x::Vector, fx::Float64, gx::Vector,
   return numr/denm
 end
 
-function _solve_subproblem_exact(g::Vector, B::Symmetric{Float64, Matrix{Float64}}, del::Float64)
+function _solve_subproblem_exact(g::Vector, B::Symmetric{Float64, Matrix{Float64}},
+                                 del::Float64)
   lmin = max(0.0, -real(eigmin(B)))
   lval = lmin + 0.1
   pl   = zeros(length(g))
@@ -26,10 +28,11 @@ function _solve_subproblem_exact(g::Vector, B::Symmetric{Float64, Matrix{Float64
 end
 
 function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
-                     d2funs::Vector{Vector{Function}}, opts::Maxlikopts; profile::Bool=false,
-                     vrb::Bool=false, dmax::Float64=1.0, dini::Float64=0.5, eta::Float64=0.125,
-                     rtol::Float64=1.0e-8, atol::Float64=1.0e-5, maxit::Int64=200,
-                     dcut::Float64=1.0e-4)
+                     d2funs::Vector{Vector{Function}}, opts::Maxlikopts;
+                     profile::Bool=false, vrb::Bool=false, dmax::Float64=1.0,
+                     dini::Float64=0.5, eta::Float64=0.125,
+                     rtol::Float64=1.0e-8, atol::Float64=1.0e-5,
+                     maxit::Int64=200, dcut::Float64=1.0e-4)
   dl, r1, st, cnt, fg = dini, 0.0, 0, 0, false
   xv = deepcopy(init)
   ro = zeros(length(init))
@@ -82,45 +85,17 @@ function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
   return cnt, xv
 end
 
-function grad_and_fisher_matrix(prm, loc_s, dat_s, opts)
-  # initialize:
-  g_out = zeros(length(prm))
-  F_out = zeros(length(prm), length(prm))
-  K     = KernelMatrix(loc_s, loc_s, prm, opts.kernfun)
-  HK    = KernelHODLR(K, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
-  HODLR.symmetricfactorize!(HK, plel=opts.fpll)
-  # Loop over and fill in the arrays minus the diagonal corrections:
-  for j in eachindex(prm)
-    HKj      = DerivativeHODLR(K, opts.dfuns[j], HK, plel=opts.apll)
-    trace_j  = mean(v->HODLR_trace_apply(HK, HKj, v), opts.saav)
-    g_out[j] = 0.5*(trace_j - dot(dat_s, HK\(HKj*(HK\dat_s))))
-    for k in j:length(prm)
-      HKk    = DerivativeHODLR(K, opts.dfuns[k], HK, plel=opts.apll)
-      if k == j
-        F_out[j,j] = 0.5*mean(v->HODLR_hess_tr1_sym_diag(HK, HKj, v), opts.saav)
-      else
-        F_out[j,k] = 0.25*mean(v->HODLR_hess_tr1_sym_offdiag(HK, HKj, HKk, v), opts.saav)
-      end
-    end
-  end
-  # Loop again for the expected fisher and fill in the diagonal corrections:
-  for j in eachindex(prm)
-    for k in (j+1):length(prm)
-      F_out[j,k] -= 0.5*(F_out[j,j] + F_out[k,k])
-    end
-  end
-  return g_out, Symmetric(F_out)
-end
-
 function fisherscore(init, loc_s, dat_s, opts; vrb=false,
                      g_tol=1.0e-8, s_tol=1.0e-8, maxit=50)
-  old, new = deepcopy(init), deepcopy(init)
+  old, new, Fj = deepcopy(init), deepcopy(init), zeros(length(init), length(init))
   for j in 1:maxit
+    vrb && println(new)
     gj, Fj = grad_and_fisher_matrix(old, loc_s, dat_s, opts)
-    new    = old + Fj\gj
+    new    = old - Fj\gj
     abs2(norm(gj)) < g_tol && (vrb && println("STOP: gradient tol reached") ; break)
     abs2(norm(old-new)) < g_tol && (vrb && println("STOP: step tol reached") ; break)
+    old   .= new
   end
-  return new
+  return new, Fj
 end
 
