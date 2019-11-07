@@ -1,7 +1,8 @@
 
 module HODLR
 
-  using  StaticArrays, KernelMatrices, Distributed, Random, SharedArrays, LinearAlgebra
+  using  StaticArrays, KernelMatrices, SharedArrays
+  using Statistics, LinearAlgebra, Distributed, Random
 
   import NearestNeighbors
   import KernelMatrices: KernelMatrix, submatrix, ACA, submatrix_nystrom, nlfisub, full, nystrom_uvt, NystromKernel

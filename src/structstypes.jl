@@ -7,7 +7,7 @@ mutable struct KernelMatrix{T, N, A, Fn}
 end
 
 function KernelMatrix(pts, pts2, prms::Vector, fn::Function)
-  typeof(pts) == typeof(pts2) || error("Type of pts and pts2 must agree.")
+  eltype(pts) == eltype(pts2) || error("Eltype of pts and pts2 must agree.")
   A = eltype(pts)
   T = eltype(prms)
   return KernelMatrix{T,length(prms),A,typeof(fn)}(pts, pts2, SVector{length(prms), T}(prms), fn)

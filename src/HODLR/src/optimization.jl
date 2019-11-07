@@ -82,3 +82,45 @@ function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
   return cnt, xv
 end
 
+function grad_and_fisher_matrix(prm, loc_s, dat_s, opts)
+  # initialize:
+  g_out = zeros(length(prm))
+  F_out = zeros(length(prm), length(prm))
+  K     = KernelMatrix(loc_s, loc_s, prm, opts.kernfun)
+  HK    = KernelHODLR(K, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HODLR.symmetricfactorize!(HK, plel=opts.fpll)
+  # Loop over and fill in the arrays minus the diagonal corrections:
+  for j in eachindex(prm)
+    HKj      = DerivativeHODLR(K, opts.dfuns[j], HK, plel=opts.apll)
+    trace_j  = mean(v->HODLR_trace_apply(HK, HKj, v), opts.saav)
+    g_out[j] = 0.5*(trace_j - dot(dat_s, HK\(HKj*(HK\dat_s))))
+    for k in j:length(prm)
+      HKk    = DerivativeHODLR(K, opts.dfuns[k], HK, plel=opts.apll)
+      if k == j
+        F_out[j,j] = 0.5*mean(v->HODLR_hess_tr1_sym_diag(HK, HKj, v), opts.saav)
+      else
+        F_out[j,k] = 0.25*mean(v->HODLR_hess_tr1_sym_offdiag(HK, HKj, HKk, v), opts.saav)
+      end
+    end
+  end
+  # Loop again for the expected fisher and fill in the diagonal corrections:
+  for j in eachindex(prm)
+    for k in (j+1):length(prm)
+      F_out[j,k] -= 0.5*(F_out[j,j] + F_out[k,k])
+    end
+  end
+  return g_out, Symmetric(F_out)
+end
+
+function fisherscore(init, loc_s, dat_s, opts; vrb=false,
+                     g_tol=1.0e-8, s_tol=1.0e-8, maxit=50)
+  old, new = deepcopy(init), deepcopy(init)
+  for j in 1:maxit
+    gj, Fj = grad_and_fisher_matrix(old, loc_s, dat_s, opts)
+    new    = old + Fj\gj
+    abs2(norm(gj)) < g_tol && (vrb && println("STOP: gradient tol reached") ; break)
+    abs2(norm(old-new)) < g_tol && (vrb && println("STOP: step tol reached") ; break)
+  end
+  return new
+end
+

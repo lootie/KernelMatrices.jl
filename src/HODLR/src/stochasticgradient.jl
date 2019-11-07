@@ -3,7 +3,7 @@ function HODLR_trace_apply(HK::KernelHODLR{T}, HKj::DerivativeHODLR{T}, vec::Vec
   tmp1 = Array{T}(undef, length(vec))
   tmp2 = Array{T}(undef, length(vec))
   _At_ldiv_B!(tmp1, HK.W, vec)
-  mul!(  tmp2, HKj,  tmp1)
+  mul!(tmp2, HKj, tmp1)
   return dot(tmp1, tmp2)
 end
 
@@ -13,12 +13,12 @@ function HODLR_grad_term(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dfn::Fun
                          vecs::Vector{Vector{T}}; plel::Bool=false, verbose::Bool=false) where{T<:Number,N,A,Fn}
   # Get the EXACT HODLR derivative:
   verbose && println("Assembling derivative matrix...")
-  HKj       = DerivativeHODLR(K, dfn, HK, plel=plel)
+  HKj   = DerivativeHODLR(K, dfn, HK, plel=plel)
   # Sequentially apply the solves/products:
   verbose && println("Applying the sequential solves/products...")
-  prvec     = HK\(HKj*(HK\dat))
+  prvec = HK\(HKj*(HK\dat))
   # Compute the trace term:
-  trtm      = mapreduce(v->HODLR_trace_apply(HK, HKj, v), +, vecs)/length(vecs)
+  trtm  = mapreduce(v->HODLR_trace_apply(HK, HKj, v), +, vecs)/length(vecs)
   return 0.5*(trtm - dot(dat, prvec))
 end
 
@@ -31,9 +31,7 @@ function stoch_gradient(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dat::Vect
   HK.U == nothing                  || error("The matrix needs to be factorized for this to work.")
   length(dfuns) == length(K.parms) || error("You didn't supply the right number of gradient funs.")
   # Shuffle the SAA vectors if requested:
-  if shuffle
-    saa_shuffle!(opts.saav)
-  end
+  shuffle && saa_shuffle!(opts.saav)
   # Loop over the functions:
   out = map(df -> HODLR_grad_term(K, HK, df, dat, vecs, plel=plel, verbose=verbose), dfuns)
   return out

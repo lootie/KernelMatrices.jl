@@ -1,6 +1,8 @@
 
 module KernelMatrices
 
+  #@doc read(joinpath(dirname(@__DIR__), "Readme.md"), String) KernelMatrices
+
   using StaticArrays, SpecialFunctions, SharedArrays, Distributed, LinearAlgebra
 
   import IterTools
