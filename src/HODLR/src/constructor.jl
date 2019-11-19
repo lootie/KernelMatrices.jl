@@ -156,7 +156,7 @@ end
 # A wrapper-type function with kwargs to make building this options struct easier.
 function maxlikopts(;kernfun, prec, level, rank, saavecs, dfuns=Function[],
                     par_assem=true, par_factor=false, fix_saa=true, verbose=false)
-  return Maxlikopts(kernfun, dfuns, prec, level, maxrank, saavecs, par_assem,
+  return Maxlikopts(kernfun, dfuns, prec, level, rank, saavecs, par_assem,
                     par_factor, verbose, fix_saa)
 end
 

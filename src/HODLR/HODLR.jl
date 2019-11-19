@@ -9,7 +9,7 @@ module HODLR
   import IterTools:      zip, chain, partition, drop, imap
   import LinearAlgebra:  factorize, mul!, ldiv!, logdet, det, adjoint, transpose, inv, tr
 
-  export KernelHODLR, RKernelHODLR, symmetricfactorize!
+  export KernelHODLR, RKernelHODLR, symmetricfactorize!, maxlikopts, LogLevel, FixedLevel
 
   include("./src/BlockDiagonal.jl")
 

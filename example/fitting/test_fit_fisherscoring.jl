@@ -4,7 +4,8 @@ using Distributed, LinearAlgebra, StaticArrays, NLopt
 # Declare the kernel function and its derivatives in the necessary forms for every worker:
 @everywhere begin
   using  KernelMatrices, KernelMatrices.HODLR
-  import KernelMatrices: mt1_kernfun, mt1_kernfun_d1, mt1_kernfun_d2, mt1_kernfun_d1_d2,mt1_kernfun_d2_d2
+  import KernelMatrices: mt1_kernfun, mt1_kernfun_d1, mt1_kernfun_d2
+  import KernelMatrices: mt1_kernfun_d1_d2,mt1_kernfun_d2_d2
   kernfun  = mt1_kernfun
   dfuns    = [mt1_kernfun_d1, mt1_kernfun_d2]
   d2funs   = [[HODLR.ZeroFunction(), mt1_kernfun_d1_d2], [mt1_kernfun_d2_d2]]
@@ -12,18 +13,8 @@ end
 
 # Set the size of the simulated problem and generate the maximum likelihood options:
 nsz     = 512
-opts    = HODLR.Maxlikopts(
-  kernfun,           # Kernel function
-  dfuns,             # derivative functions
-  0.0,               # The pointwise precision for the off-diagonal blocks. Not used for Nystrom method.
-  HODLR.LogLevel(8), # The number of dyadic splits of the matrix dimensions, set here to log2(N) - 8.
-  72,                # The fixed rank of the off-diagonal blocks, with 0 meaning no maximum allowed rank.
-  HODLR.givesaa(35, nsz, seed=1618), # Get the SAA vectors.
-  true,  # Parallel flag for assembly, which is safe and very beneficial
-  true,  # Parallel flag for factorization.
-  true,  # Verbose flag to see optimization path and fine-grained times
-  true,  # flag for fixing SAA vectors.
-)
+opts    = maxlikopts(kernfun=kernfun, dfuns=dfuns, prec=0.0, level=LogLevel(8),
+                     rank=72, saavecs=HODLR.givesaa(35, nsz, seed=1618), verbose=true)
 
 # simulate data points (or read in your not fake data points):
 pts      = map(x->SVector{2, Float64}(rand(2).*100.0), 1:nsz)
