@@ -102,7 +102,7 @@ mutable struct Maxlikopts
                                #(ignored for Nystrom approximation)
   lvl      :: HierLevel        # The number of dyadic splits of the matrix dimensions. 
   mrnk     :: Int64            # The fixed rank of the off-diagonal blocks, 
-                               #with 0 meaning no maximum rank.
+                               # with 0 meaning no maximum rank.
   saav     :: Vector{Vector{Float64}}   # The SAA vectors
   apll     :: Bool             # Parallel flag for assembly.
   fpll     :: Bool             # Parallel flag for factorization.

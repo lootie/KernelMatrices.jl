@@ -269,8 +269,9 @@ function exact_HODLR_fisher(prms::AbstractVector,locs::AbstractVector, dats::Abs
   return Symmetric(out)
 end
 
-function exact_fisher_matrix(prms::AbstractVector, locs::AbstractVector, dats::AbstractVector,
-                             kernfun::Function, dfuns::Vector{Function})
+function exact_fisher_matrix(prms::AbstractVector, locs::AbstractVector,
+                             dats::AbstractVector, kernfun::Function,
+                             dfuns::Vector{Function})
   K   = cholesky!(KernelMatrices.full(KernelMatrices.KernelMatrix(locs, locs, prms, kernfun)))
   out = zeros(length(dfuns), length(dfuns))
   for j in eachindex(dfuns)

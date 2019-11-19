@@ -6,6 +6,11 @@
 function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64, 
                      lvl::HierLevel; nystrom::Bool=false, 
                      plel::Bool=false)::KernelHODLR{T} where{T<:Number,N,A,Fn}
+  # Warn once about point ordering:
+  @warn "No default point sorting is done for you, and if your points are not \\
+  sorted properly than the approximation can be very poor. Expect UI changes \\
+  soon." maxlog=1
+
   # Check for symmetry:
   K.x1 == K.x2 || begin 
     throw(error(("This function builds symmetric matrices. For non-symmetric matrices,
@@ -146,5 +151,12 @@ function RKernelHODLR(K::KernelMatrix{T,N,A,Fn}, tol::Float64, maxrank::Int64=0,
     A22 = RKernelHODLR(K22, tol, maxrank, HODLR.FixedLevel(lvl.lv-1))
     return RKernelHODLR{T, UVt{T}}(A11, A22, A12, A21)
   end
+end
+
+# A wrapper-type function with kwargs to make building this options struct easier.
+function maxlikopts(;kernfun, prec, level, rank, saavecs, dfuns=Function[],
+                    par_assem=true, par_factor=false, fix_saa=true, verbose=false)
+  return Maxlikopts(kernfun, dfuns, prec, level, maxrank, saavecs, par_assem,
+                    par_factor, verbose, fix_saa)
 end
 
