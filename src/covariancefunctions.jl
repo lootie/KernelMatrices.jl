@@ -252,7 +252,7 @@ function mtn_cor_dnu_dnu(nu::Number, x::Number)
   return out
 end
 
-function mtn_kernfun(x1::AbstractVector, x2::AbstractVector, parms::AbstractVector)
+function mtn_kernfun(x1, x2, parms::AbstractVector)
   t0, t1, nu = parms[1], parms[2], parms[3]
   nx12       = norm(x1-x2)
   out        = t0

@@ -1,9 +1,16 @@
 
-# The constructor for the HODLR matrix given a KernelMatrix struct. If you nystrom=false, the blocks
-# are assembled with the ACA up to tolerance ep or rank maxrank (if maxrank>0, otherwise no limit on
-# the permitted rank). If nystrom=true, assembles blocks using the Nystrom approximation.
-function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64, lvl::HierLevel;
-                     nystrom::Bool=false, plel::Bool=false)::KernelHODLR{T} where{T<:Number,N,A,Fn}
+# The constructor for the HODLR matrix given a KernelMatrix struct. If you
+# nystrom=false, the blocks are assembled with the ACA up to tolerance ep or
+# rank maxrank (if maxrank>0, otherwise no limit on the permitted rank). If
+# nystrom=true, assembles blocks using the Nystrom approximation.
+function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64, 
+                     lvl::HierLevel; nystrom::Bool=false, 
+                     plel::Bool=false)::KernelHODLR{T} where{T<:Number,N,A,Fn}
+  # Check for symmetry:
+  K.x1 == K.x2 || begin 
+    throw(error(("This function builds symmetric matrices. For non-symmetric matrices,
+                 please use the recursive RKernelHODLR, which will only allow matvecs.")))
+  end
 
   # Get the level, leaf indices, and non-leaf indices:
   level, leafinds, nonleafinds = HODLRindices(size(K)[1], lvl)
@@ -15,7 +22,7 @@ function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64, lvl
     if maxrank >= minimum(map(x->min(x[2]-x[1], x[4]-x[3]), leafinds))
       error("Your nystrom rank is too big. Reduce the HODLR level or nystrom rank.")
     end
-    K.x1 == K.x2 || error("This type of matrix doesn't admit a Nystrom kernel appx. Need x1 == x2")
+    K.x1 == K.x2 || error("Need x1 == x2 for Nystrom approx.")
     nyind = Int64.(round.(LinRange(1, size(K)[1], maxrank)))
     nyker = NystromKernel(K.kernel, K.x1[nyind], K.parms, true)
   end
@@ -29,23 +36,27 @@ function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64, lvl
   for j in eachindex(U)
     if nystrom
       nonleafinds[j]
-      tmpUV = mapf(x->nystrom_uvt(nlfisub(K, x), nyker, plel), nonleafinds[j], nwrk, plel)
+      tmpUV = mapf(x->nystrom_uvt(nlfisub(K, x), nyker, plel), 
+                   nonleafinds[j], nwrk, plel)
     else
-      tmpUV = mapf(x->ACA(nlfisub(K, x), ep, maxrank), nonleafinds[j], nwrk, plel)
+      tmpUV = mapf(x->ACA(nlfisub(K, x), ep, maxrank), 
+                   nonleafinds[j], nwrk, plel)
     end
     U[j] = map(x->x[1], tmpUV)
     V[j] = map(x->x[2], tmpUV)
   end
 
-  return KernelHODLR{T}(ep, level, maxrank, leafinds, nonleafinds, U, V, leaves, nothing, nystrom)
+  return KernelHODLR{T}(ep, level, maxrank, leafinds, 
+                        nonleafinds, U, V, leaves, nothing, nystrom)
 
 end
 
 
 
-# The constructor for the EXACT derivative of a HODLR matrix. It doesn't actually require the blocks
-# of the HODLR matrix, but passing it the HODLR matrix is convenient to access the information about 
-# block boundaries and stuff.
+# The constructor for the EXACT derivative of a HODLR matrix. It doesn't
+# actually require the blocks of the HODLR matrix, but passing it the HODLR
+# matrix is convenient to access the information about block boundaries and
+# stuff.
 function DerivativeHODLR(K::KernelMatrix{T,N,A,Fn}, dfun::Function, HK::KernelHODLR{T}; 
                          plel::Bool=false) where{T<:Number,N,A,Fn}
   # Check that the call is valid:
@@ -66,16 +77,19 @@ function DerivativeHODLR(K::KernelMatrix{T,N,A,Fn}, dfun::Function, HK::KernelHO
   # Get the non-leaves in place:
   B      = Vector{Vector{DerivativeBlock{T}}}(undef, HK.lvl)
   for j in eachindex(B)
-    B[j] = mapf(x->DBlock(nlfisub(K, x), dfun, lndmk, plel), HK.nonleafindices[j], nwrk, plel)
+    B[j] = mapf(x->DBlock(nlfisub(K, x), dfun, lndmk, plel), 
+                HK.nonleafindices[j], nwrk, plel)
   end
 
-  return DerivativeHODLR(HK.ep, HK.lvl, HK.leafindices, HK.nonleafindices, leaves, B, S, Sj)
+  return DerivativeHODLR(HK.ep, HK.lvl, HK.leafindices, 
+                         HK.nonleafindices, leaves, B, S, Sj)
 end
 
 
 
 # Construct the leaves of the EXACT second derivative of a HODLR matrix.
-function SecondDerivativeLeaves(K::KernelMatrix{T,N,A,Fn}, djk::Function, lfi::AbstractVector, 
+function SecondDerivativeLeaves(K::KernelMatrix{T,N,A,Fn}, djk::Function, 
+                                lfi::AbstractVector, 
                                 plel::Bool=false) where{T<:Number,N,A,Fn}
   d2K    = KernelMatrix(K.x1, K.x2, K.parms, djk)
   return mapf(x->Symmetric(full(nlfisub(d2K, x), plel)), lfi, nworkers(), plel)
@@ -84,11 +98,53 @@ end
 
 
 # Construct the off-diagonal blocks of the EXACT second derivative of a HODLR matrix.
-function SecondDerivativeBlocks(K::KernelMatrix{T,N,A,Fn}, djk::Function, nlfi::AbstractVector,
+function SecondDerivativeBlocks(K::KernelMatrix{T,N,A,Fn}, djk::Function, 
+                                nlfi::AbstractVector,
                                 mrnk::Int64, plel::Bool=false) where{T<:Number,N,A,Fn}
   d2K    = KernelMatrix(K.x1, K.x2, K.parms, djk)
   lndmk  = K.x1[Int64.(round.(LinRange(1, size(K)[1], mrnk)))]
-  B      = map(nlf -> mapf(x->SBlock(nlfisub(d2K, x), djk, lndmk), nlf, nworkers(), plel), nlfi)
+  B      = map(nlf -> mapf(x->SBlock(nlfisub(d2K, x), djk, lndmk), 
+                           nlf, nworkers(), plel), nlfi)
   return B
+end
+
+# A very simple recursive HODLR matrix structure. At the moment, it only allows
+# using the ACA for off-diagonal blocks, so the matrix is not guaranteed to be
+# SPSD even if K is. If it is symmetric, though, just use more equipped
+# structure anyway. This structure is for when you just need an asymmetric matvec.
+#
+# I'm also hoping, though, that the new threaded model in julia 1.3 will mean
+# that this object can be constructed quite efficiently in massive parallel.
+function RKernelHODLR(K::KernelMatrix{T,N,A,Fn}, tol::Float64, maxrank::Int64=0,
+                      lvl::HierLevel=LogLevel(7)) where{T,N,A,Fn}
+
+  # If the level is LogLevel, call the function again with that FixedLevel:
+  if typeof(lvl) <: LogLevel 
+    lv = FixedLevel(Int64(floor(log2(size(K,1)) - lvl.lv)))
+    return RKernelHODLR(K, tol, maxrank, lv)
+  end
+
+  # Check sizes:
+  iszero(lvl.lv) && return K
+  len1, len2 = size(K)
+  mpt1, mpt2 = Int64(floor(len1/2)), Int64(floor(len2/2))
+
+  # Compute the sub-blocks:
+  K11 = submatrix(K, 1,      mpt1, 1,      mpt2)
+  K22 = submatrix(K, mpt1+1, len1, mpt2+1, len2)
+  K12 = submatrix(K, 1,      mpt1, mpt2+1, len2)
+  K21 = submatrix(K, mpt1+1, len1, 1,      mpt2)
+
+  # Factorize the off-diagonal blocks:
+  A12 = UVt{T}(ACA(K12, tol, maxrank)...)
+  A21 = UVt{T}(ACA(K21, tol, maxrank)...)
+
+  if isone(lvl.lv)
+    return RKernelHODLR{T, UVt{T}}(full(K11), full(K22), A12, A21)
+  else
+    A11 = RKernelHODLR(K11, tol, maxrank, HODLR.FixedLevel(lvl.lv-1))
+    A22 = RKernelHODLR(K22, tol, maxrank, HODLR.FixedLevel(lvl.lv-1))
+    return RKernelHODLR{T, UVt{T}}(A11, A22, A12, A21)
+  end
 end
 

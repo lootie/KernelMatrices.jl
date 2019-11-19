@@ -9,6 +9,8 @@ module HODLR
   import IterTools:      zip, chain, partition, drop, imap
   import LinearAlgebra:  factorize, mul!, ldiv!, logdet, det, adjoint, transpose, inv, tr
 
+  export KernelHODLR, RKernelHODLR, symmetricfactorize!
+
   include("./src/BlockDiagonal.jl")
 
   include("./src/structstypes.jl")

@@ -18,30 +18,11 @@ function Base.size(W::LowRankW{T}, j::Int64)::Int64 where{T<:Number}
   return ifelse(j==1, size(W.M,1), size(W.M,2))
 end
 
-function full(M::LowRankW{T})::Matrix{T} where{T<:Number}
-  return I + mul_t(M.M*M.X, M.M)
-end
-
 function det(W::LowRankW{T})::Float64 where{T<:Number}
   return det(I + t_mul(W.M, W.M)*W.X)
 end
 
 Base.adjoint(M::LowRankW{T}) where{T<:Number} = LowRankW(M.M, Matrix{Float64}(M.X'))
-
-function full(K::KernelHODLR{T})::Matrix{T} where{T<:Number}
-  Out = Array{T}(undef, size(K))
-  for (j,pt) in enumerate(K.leafindices)
-    Out[pt[1]:pt[2], pt[3]:pt[4]] = K.L[j]
-  end
-  for lev in eachindex(K.U)
-    for j in eachindex(K.U[lev])
-      a, b, c, d    = K.nonleafindices[lev][j]
-      Out[a:b, c:d] = mul_t(K.U[lev][j], K.V[lev][j])
-      Out[c:d, a:b] = mul_t(K.V[lev][j], K.U[lev][j])
-    end
-  end
-  return Out
-end
 
 function mul!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
@@ -54,7 +35,8 @@ function mul!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:
   return target
 end
 
-function _At_mul_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
+function _At_mul_B!(target::StridedArray, W::LowRankW{T}, 
+                    src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
@@ -82,7 +64,8 @@ function ldiv!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<
   return target
 end
 
-function _At_ldiv_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
+function _At_ldiv_B!(target::StridedArray, W::LowRankW{T}, 
+                     src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
@@ -93,7 +76,8 @@ function _At_ldiv_B!(target::StridedArray, W::LowRankW{T}, src::StridedArray) wh
   return target
 end
 
-function mul!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
+function mul!(target::StridedVector, W::FactorHODLR{T}, 
+              src::StridedVector) where{T<:Number}
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the nonleafW vectors in the correct order:
@@ -108,7 +92,8 @@ function mul!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) wher
   return target
 end
 
-function _At_mul_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
+function _At_mul_B!(target::StridedVector, W::FactorHODLR{T}, 
+                    src::StridedVector) where{T<:Number}
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the leaf vectors:
@@ -125,7 +110,8 @@ function _At_mul_B!(target::StridedVector, A::StridedMatrix, src::StridedVector)
   mul!(target, transpose(A), src)
 end
 
-function ldiv!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
+function ldiv!(target::StridedVector, W::FactorHODLR{T}, 
+               src::StridedVector) where{T<:Number}
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the leaf vectors:
@@ -137,7 +123,8 @@ function ldiv!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) whe
   return target
 end
 
-function _At_ldiv_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVector) where{T<:Number}
+function _At_ldiv_B!(target::StridedVector, W::FactorHODLR{T}, 
+                     src::StridedVector) where{T<:Number}
   target .= src
   # Apply the nonleafW vectors in the correct order:
   for j in length(W.nonleafW):-1:1
@@ -148,7 +135,8 @@ function _At_ldiv_B!(target::StridedVector, W::FactorHODLR{T}, src::StridedVecto
   return target
 end
 
-function mul!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
+function mul!(target::StridedVector, K::KernelHODLR{T}, 
+              src::StridedVector) where{T<:Number}
   if K.W == nothing
     # Zero out the target vector:
     fill!(target, zero(eltype(target)))
@@ -176,11 +164,13 @@ function mul!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) wher
   return target
 end
 
-function _At_mul_B!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
+function _At_mul_B!(target::StridedVector, K::KernelHODLR{T}, 
+                    src::StridedVector) where{T<:Number}
   return mul!(target, K, src)
 end
 
-function ldiv!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
+function ldiv!(target::StridedVector, K::KernelHODLR{T}, 
+               src::StridedVector) where{T<:Number}
   if K.W == nothing
     error("No solves without factorization.")
   else
@@ -192,7 +182,8 @@ function ldiv!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) whe
   return target
 end
 
-function _At_ldiv_B!(target::StridedVector, K::KernelHODLR{T}, src::StridedVector) where{T<:Number}
+function _At_ldiv_B!(target::StridedVector, K::KernelHODLR{T}, 
+                     src::StridedVector) where{T<:Number}
   return ldiv!(target, K, src)
 end
 
@@ -218,22 +209,8 @@ function Base.size(DK::DerivativeHODLR{T})::Tuple{Int64, Int64} where{T<:Number}
   return sz, sz
 end
 
-function full(DK::DerivativeHODLR{T})::Matrix{T} where{T<:Number}
-  Out = zeros(T, size(DK))
-  for (j,pt) in enumerate(DK.leafindices)
-    Out[pt[1]:pt[2], pt[3]:pt[4]] = DK.L[j]
-  end
-  for lev in eachindex(DK.B)
-    for j in eachindex(DK.B[lev])
-      a, b, c, d     = DK.nonleafindices[lev][j]
-      Out[a:b, c:d]  = DBlock_full(DK.B[lev][j], DK.S, DK.Sj)
-      Out[c:d, a:b]  = transpose(Out[a:b, c:d])
-    end
-  end
-  return Out
-end
-
-function mul!(target::StridedVector, DK::DerivativeHODLR{T}, src::StridedVector) where{T<:Number}
+function mul!(target::StridedVector, DK::DerivativeHODLR{T}, 
+              src::StridedVector) where{T<:Number}
   # Zero out the target vector:
   fill!(target, zero(eltype(target)))
   # Apply the leaves:
@@ -283,7 +260,8 @@ function LinearAlgebra.:*(W::LowRankW{T}, src::Matrix{T})::Matrix{T} where{T<:Nu
   return mul!(target, W, src)
 end
 
-function LinearAlgebra.:*(DK::DerivativeHODLR{T}, src::Vector{T})::Vector{T} where{T<:Number}
+function LinearAlgebra.:*(DK::DerivativeHODLR{T}, 
+                          src::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(undef, size(src))
   return mul!(target, DK, src)
 end
@@ -298,6 +276,43 @@ function LinearAlgebra.:\(W::LowRankW{T}, src::Matrix{T})::Matrix{T} where{T<:Nu
   return ldiv!(target, W, src)
 end
 
+@inline Base.size(UV::UVt{T}) where{T} = (size(UV.U, 1), size(UV.V, 2))
+
+@inline Base.size(UV::UVt{T}, j) where{T} = size(UV)[j]
+
+@inline Base.:*(UV::UVt{T}, v::Vector{T}) where{T} = UV.U*(UV.V'v)
+
+@inline Base.size(R::RKernelHODLR) = size(R.A11) .+ size(R.A22)
+
+@inline Base.size(R::RKernelHODLR, j::Int64) = size(R.A11, j) + size(R.A22, j)
+
+function Base.:*(R::RKernelHODLR, V::Vector)
+  ix1 = 1:size(R.A11, 2)
+  ix2 = (size(R.A11, 2)+1):size(R, 2)
+  return vcat(R.A11*V[ix1] + R.A12*V[ix2], R.A21*V[ix1] + R.A22*V[ix2])
+end
+
+# Not technically base overloads, but in the same spirit:
+
+function full(M::LowRankW{T})::Matrix{T} where{T<:Number}
+  return I + mul_t(M.M*M.X, M.M)
+end
+
+function full(K::KernelHODLR{T})::Matrix{T} where{T<:Number}
+  Out = Array{T}(undef, size(K))
+  for (j,pt) in enumerate(K.leafindices)
+    Out[pt[1]:pt[2], pt[3]:pt[4]] = K.L[j]
+  end
+  for lev in eachindex(K.U)
+    for j in eachindex(K.U[lev])
+      a, b, c, d    = K.nonleafindices[lev][j]
+      Out[a:b, c:d] = mul_t(K.U[lev][j], K.V[lev][j])
+      Out[c:d, a:b] = mul_t(K.V[lev][j], K.U[lev][j])
+    end
+  end
+  return Out
+end
+
 # VERY computationally inefficient. This really is only for testing.
 function full(W::FactorHODLR{T})::Matrix{T} where{T<:Number}
   Out = cat(W.leafW..., dims=[1,2])
@@ -307,4 +322,25 @@ function full(W::FactorHODLR{T})::Matrix{T} where{T<:Number}
   end
   return Out
 end
+
+function full(DK::DerivativeHODLR{T})::Matrix{T} where{T<:Number}
+  Out = zeros(T, size(DK))
+  for (j,pt) in enumerate(DK.leafindices)
+    Out[pt[1]:pt[2], pt[3]:pt[4]] = DK.L[j]
+  end
+  for lev in eachindex(DK.B)
+    for j in eachindex(DK.B[lev])
+      a, b, c, d     = DK.nonleafindices[lev][j]
+      Out[a:b, c:d]  = DBlock_full(DK.B[lev][j], DK.S, DK.Sj)
+      Out[c:d, a:b]  = transpose(Out[a:b, c:d])
+    end
+  end
+  return Out
+end
+
+@inline full(UV::UVt{T}) where{T} = UV.U*UV.V'
+
+@inline full(M::Matrix{T}) where{T} = M
+
+full(R::RKernelHODLR) = [full(R.A11) full(R.A12) ; full(R.A21) full(R.A22)]
 
