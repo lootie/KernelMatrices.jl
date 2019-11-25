@@ -30,6 +30,6 @@ function NystromKernel(kern::Function, landmark::AbstractVector,
     end
   end
   F = ispd ? cholesky!(Symmetric(M)) : bkfact!(Symmetric(M))
-  return NystromKernel(kern, parms, landmark, F)
+  return NystromKernel(kern, SVector{length(parms), Float64}(parms), landmark, F)
 end
 

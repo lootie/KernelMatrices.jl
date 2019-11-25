@@ -1,6 +1,7 @@
 
-# Get the leaf sizes. The leaves will have sizes between fix_level and 2*fix_level. If fix_level
-# isn't valid, it will be adjusted, sometimes without warning.
+# Get the leaf sizes. The leaves will have sizes between fix_level and
+# 2*fix_level. If fix_level isn't valid, it will be adjusted, sometimes without
+# warning.
 function _leafsizes(N::Int64, lvl::HierLevel)::Tuple{Int64, Vector{Int64}}
   if typeof(lvl) == FixedLevel
     n = min(max(0, lvl.lv), Int64(floor(log2(N))))

@@ -250,6 +250,14 @@ function LinearAlgebra.:\(K::KernelHODLR{T}, src::Vector{T})::Vector{T} where{T<
   return ldiv!(target, K, src)
 end
 
+function LinearAlgebra.:\(K::KernelHODLR{T}, src::Matrix{T})::Matrix{T} where{T<:Number}
+  target = similar(src)
+  for j in 1:size(src, 2)
+    ldiv!(view(target, :, j), K, view(src, :, j))
+  end
+  return target
+end
+
 function LinearAlgebra.:*(W::LowRankW{T}, src::Vector{T})::Vector{T} where{T<:Number}
   target = Array{T}(undef, length(src))
   return mul!(target, W, src)

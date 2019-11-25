@@ -125,12 +125,12 @@ function RKernelHODLR(K::KernelMatrix{T,N,A,Fn}, tol::Float64, maxrank::Int64=0,
 
   # If the level is LogLevel, call the function again with that FixedLevel:
   if typeof(lvl) <: LogLevel 
-    lv = FixedLevel(Int64(floor(log2(size(K,1)) - lvl.lv)))
+    lv = FixedLevel(Int64(floor(log2(minimum(size(K))) - lvl.lv)))
     return RKernelHODLR(K, tol, maxrank, lv)
   end
 
   # Check sizes:
-  iszero(lvl.lv) && return K
+  iszero(lvl.lv) && return full(K)
   len1, len2 = size(K)
   mpt1, mpt2 = Int64(floor(len1/2)), Int64(floor(len2/2))
 
@@ -155,7 +155,7 @@ end
 
 # A wrapper-type function with kwargs to make building this options struct easier.
 function maxlikopts(;kernfun, prec, level, rank, saavecs, dfuns=Function[],
-                    par_assem=true, par_factor=false, fix_saa=true, verbose=false)
+                    par_assem=false, par_factor=false, fix_saa=true, verbose=false)
   return Maxlikopts(kernfun, dfuns, prec, level, rank, saavecs, par_assem,
                     par_factor, verbose, fix_saa)
 end
