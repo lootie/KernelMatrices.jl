@@ -73,7 +73,7 @@ end
 function exact_HODLR_gradient(prms::AbstractVector{Float64}, locs::AbstractVector,
                               dats::AbstractVector, opts::HODLR.Maxlikopts)
   nK  = KernelMatrices.KernelMatrix(locs, locs, prms, kernfun)
-  HK  = HODLR.KernelHODLR(nK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK  = HODLR.KernelHODLR(nK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   HKf = cholesky!(KernelMatrices.full(HK))
   out = zeros(length(opts.dfuns))
   for j in eachindex(out)
@@ -85,7 +85,7 @@ end
 function exact_HODLR_nll_objective(prms::AbstractVector{Float64}, g::AbstractVector,
                                    locs::AbstractVector, dats::AbstractVector, opts::HODLR.Maxlikopts)
   nK  = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
-  HK  = HODLR.full(HODLR.KernelHODLR(nK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll))
+  HK  = HODLR.full(HODLR.KernelHODLR(nK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll))
   if length(g) > 0
     g .= exact_HODLR_gradient(prms, locs, dats, opts)
   end
@@ -238,7 +238,7 @@ end
 function exact_HODLR_hessian(prms::AbstractVector,locs::AbstractVector, dats::AbstractVector,
                              opts::HODLR.Maxlikopts, d2funs::Vector{Vector{Function}})
   nK  = KernelMatrices.KernelMatrix(locs, locs, prms, kernfun)
-  HK  = HODLR.KernelHODLR(nK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK  = HODLR.KernelHODLR(nK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   HKf = cholesky!(HODLR.full(HK))
   out = zeros(length(dfuns), length(dfuns))
   for j in eachindex(dfuns)
@@ -254,7 +254,7 @@ end
 function exact_HODLR_fisher(prms::AbstractVector,locs::AbstractVector, dats::AbstractVector,
                             opts::HODLR.Maxlikopts)
   nK  = KernelMatrices.KernelMatrix(locs, locs, prms, kernfun)
-  HK  = HODLR.KernelHODLR(nK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK  = HODLR.KernelHODLR(nK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   HKf = cholesky!(HODLR.full(HK))
   out = zeros(length(dfuns), length(dfuns))
   for j in eachindex(dfuns)

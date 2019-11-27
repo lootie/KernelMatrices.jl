@@ -138,7 +138,7 @@ function grad_and_fisher_matrix(prm, loc_s, dat_s, opts)
   g_out = zeros(length(prm))
   F_out = zeros(length(prm), length(prm))
   K     = KernelMatrix(loc_s, loc_s, prm, opts.kernfun)
-  HK    = KernelHODLR(K, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK    = KernelHODLR(K, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   HODLR.symmetricfactorize!(HK, plel=opts.fpll)
   # Loop over and fill in the arrays minus the diagonal corrections:
   for j in eachindex(prm)

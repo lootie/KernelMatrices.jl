@@ -21,7 +21,7 @@ end
 function scaleparm_mle(prms::AbstractVector, locs::AbstractVector, 
                        dats::AbstractVector, opts::Maxlikopts)
   nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
-  HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   scal = dot(dats, HK\dats)/length(dats)
   return scal
@@ -32,7 +32,7 @@ function nll_objective(prms::AbstractVector, grad::Vector, locs::AbstractVector,
   opts.verb && @show prms
   nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   tim1 = @elapsed begin
-  HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
   opts.verb && println("Assembly+factorize took       $(round(tim1, digits=3)) seconds.")
@@ -52,7 +52,7 @@ end
 function nlpl_scale(prms::AbstractVector, locs::AbstractVector, 
                     dats::AbstractVector, opts::Maxlikopts)
   nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
-  HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   return dot(dats, HK\dats)/length(dats)
 end
@@ -64,7 +64,7 @@ function nlpl_objective(prms::AbstractVector, grad::Vector,
   opts.verb && @show prms
   nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   tim1 = @elapsed begin
-  HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
   opts.verb && println("Assembly+factorize took       $(round(tim1, digits=3)) seconds.")
@@ -85,7 +85,7 @@ function nll_gradient(prms::AbstractVector, locs::AbstractVector,
                       dats::AbstractVector, opts::Maxlikopts)
   nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   tim1 = @elapsed begin
-  HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
   opts.verb && println("Assembly+factorize took       $(round(tim1, digits=3)) seconds.")
@@ -103,7 +103,7 @@ function nll_hessian(prms::AbstractVector, locs::AbstractVector,
                      d2funs::Vector{Vector{Function}})
   nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   tim1 = @elapsed begin
-  HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
   opts.verb && println("Assembly+factorize took      $(round(tim1, digits=3)) seconds.")
@@ -122,7 +122,7 @@ function nlpl_hessian(prms::AbstractVector, locs::AbstractVector,
                       d2funs::Vector{Vector{Function}})
   nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
   tim1 = @elapsed begin
-  HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
   opts.verb && println("Assembly+factorize took      $(round(tim1, digits=3)) seconds.")
@@ -138,7 +138,7 @@ end
 function fisher_matrix(prms::AbstractVector, locs::AbstractVector, 
                        dats::AbstractVector, opts::Maxlikopts)
   nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
-  HK   = KernelHODLR(nllK, opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   DKs  = map(df -> DerivativeHODLR(nllK, df, HK, plel=opts.apll), opts.dfuns)
   fish = stoch_fisher(nllK, HK, DKs, opts.saav, plel=opts.apll, shuffle=!(opts.saa_fix))
@@ -158,7 +158,7 @@ function gpsimulate(locs::AbstractVector, parms::Vector, opts::Maxlikopts;
     cKf  = cholesky(Symmetric(full(covK))).U
     mul!(out, transpose(cKf), inp)
   else
-    cHK  = HODLR.KernelHODLR(covK, opts.epK, opts.mrnk, opts.lvl, 
+    cHK  = HODLR.KernelHODLR(covK, 0.0, opts.mrnk, opts.lvl, 
                              nystrom=true, plel=opts.apll)
     HODLR.symmetricfactorize!(cHK, plel=opts.fpll)
     mul!(out, cHK.W, inp)
@@ -169,17 +169,23 @@ end
 # The H-matrix interpretation of the kriging is that we put all of the new
 # points into their own leaf, so that they have an exact covariance matrix. The
 # interaction term is low-rank per the HODLR model.
-function nys_krige(newlocs, datalocs, data, parms, opts)
+function nys_krige(newlocs, datalocs, data, parms, opts; exact=false)
   # Kernel matrix for the data:
   HK   = KernelHODLR(KernelMatrix(datalocs, datalocs, parms, opts.kernfun), 
-                     opts.epK, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+                     0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
   symmetricfactorize!(HK, plel=opts.fpll)
   # Nystrom kernel for constructions below:
   nyind = Int64.(round.(LinRange(1, length(datalocs), opts.mrnk)))
   nyker = NystromKernel(opts.kernfun, datalocs[nyind], parms, true)
   # Non-symmetric NYSTROM kernel matrix for the data with the new locations:
-  U0,V0 = nystrom_uvt(KernelMatrix(datalocs, newlocs, parms, opts.kernfun),
-                     nyker, false)
+  # (with very quick non-scalable option for exact interpolation):
+  if exact
+    UV = qr(full(KernelMatrix(datalocs, newlocs, parms, opts.kernfun)))
+    U0,V0 = Matrix(UV.Q), UV.R
+  else
+    U0,V0 = nystrom_uvt(KernelMatrix(datalocs, newlocs, parms, opts.kernfun),
+                       nyker, false)
+  end
   # kernel matrix for the new locations:
   Knew  = full(KernelMatrix(newlocs, newlocs, parms, opts.kernfun))
   # Compute the predicted values and variances:

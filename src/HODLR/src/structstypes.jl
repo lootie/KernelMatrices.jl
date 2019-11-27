@@ -98,11 +98,8 @@ end
 mutable struct Maxlikopts
   kernfun  :: Function         # The kernel function
   dfuns    :: Vector{Function} # The vector of derivative functions
-  epK      :: Float64          # The pointwise precision for the off-diagonal blocks 
-                               #(ignored for Nystrom approximation)
   lvl      :: HierLevel        # The number of dyadic splits of the matrix dimensions. 
-  mrnk     :: Int64            # The fixed rank of the off-diagonal blocks, 
-                               # with 0 meaning no maximum rank.
+  mrnk     :: Int64            # The fixed rank of the off-diagonal blocks.
   saav     :: Vector{Vector{Float64}}   # The SAA vectors
   apll     :: Bool             # Parallel flag for assembly.
   fpll     :: Bool             # Parallel flag for factorization.

@@ -154,9 +154,10 @@ function RKernelHODLR(K::KernelMatrix{T,N,A,Fn}, tol::Float64, maxrank::Int64=0,
 end
 
 # A wrapper-type function with kwargs to make building this options struct easier.
-function maxlikopts(;kernfun, prec, level, rank, saavecs, dfuns=Function[],
-                    par_assem=false, par_factor=false, fix_saa=true, verbose=false)
-  return Maxlikopts(kernfun, dfuns, prec, level, rank, saavecs, par_assem,
+function maxlikopts(;kernfun, level, rank, saavecs=Vector{Vector}(), 
+                    fix_saa=true, dfuns=Function[], par_assem=false, 
+                    par_factor=false, verbose=false)
+  return Maxlikopts(kernfun, dfuns, level, rank, saavecs, par_assem,
                     par_factor, verbose, fix_saa)
 end
 
