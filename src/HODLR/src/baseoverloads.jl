@@ -24,6 +24,8 @@ end
 
 Base.adjoint(M::LowRankW{T}) where{T<:Number} = LowRankW(M.M, Matrix{Float64}(M.X'))
 
+Base.adjoint(A::UVt{T}) where{T<:Number} = UVt(A.V, A.U)
+
 function mul!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  

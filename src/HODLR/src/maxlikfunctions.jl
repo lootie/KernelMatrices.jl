@@ -180,17 +180,18 @@ function nys_krige(newlocs, datalocs, data, parms, opts; exact=false)
   # Non-symmetric NYSTROM kernel matrix for the data with the new locations:
   # (with very quick non-scalable option for exact interpolation):
   if exact
-    UV = qr(full(KernelMatrix(datalocs, newlocs, parms, opts.kernfun)))
-    U0,V0 = Matrix(UV.Q), UV.R
+    UV  = qr(full(KernelMatrix(datalocs, newlocs, parms, opts.kernfun)))
+    UV0 = UVt(Matrix(UV.Q), UV.R)
   else
     U0,V0 = nystrom_uvt(KernelMatrix(datalocs, newlocs, parms, opts.kernfun),
                        nyker, false)
+    UV0   = UVt(U0, V0)
   end
   # kernel matrix for the new locations:
   Knew  = full(KernelMatrix(newlocs, newlocs, parms, opts.kernfun))
   # Compute the predicted values and variances:
-  predicted_val = V0*((U0')*(HK\data))
-  predicted_var = Symmetric(Knew - V0*(U0'*((HK\U0)*V0')))
+  predicted_val = UV0'*(HK\data)
+  predicted_var = Symmetric(Knew - UV0.V*(UV0.U'*((HK\UV0.U)*UV0.V')))
   return predicted_val, predicted_var
 end
 

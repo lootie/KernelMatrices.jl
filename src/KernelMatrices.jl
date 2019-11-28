@@ -8,7 +8,7 @@ module KernelMatrices
   import IterTools
   import LinearAlgebra: mul!
 
-  export KernelMatrix, ACA
+  export KernelMatrix, ACA, full
 
   include("structstypes.jl")
 
