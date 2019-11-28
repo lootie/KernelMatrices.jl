@@ -166,9 +166,7 @@ function gpsimulate(locs::AbstractVector, parms::Vector, opts::Maxlikopts;
   return lcss, out
 end
 
-# The H-matrix interpretation of the kriging is that we put all of the new
-# points into their own leaf, so that they have an exact covariance matrix. The
-# interaction term is low-rank per the HODLR model.
+# A very temporary kriging function.
 function nys_krige(newlocs, datalocs, data, parms, opts; exact=false)
   # Kernel matrix for the data:
   HK   = KernelHODLR(KernelMatrix(datalocs, datalocs, parms, opts.kernfun), 
@@ -177,21 +175,8 @@ function nys_krige(newlocs, datalocs, data, parms, opts; exact=false)
   # Nystrom kernel for constructions below:
   nyind = Int64.(round.(LinRange(1, length(datalocs), opts.mrnk)))
   nyker = NystromKernel(opts.kernfun, datalocs[nyind], parms, true)
-  # Non-symmetric NYSTROM kernel matrix for the data with the new locations:
-  # (with very quick non-scalable option for exact interpolation):
-  if exact
-    UV  = qr(full(KernelMatrix(datalocs, newlocs, parms, opts.kernfun)))
-    UV0 = UVt(Matrix(UV.Q), UV.R)
-  else
-    U0,V0 = nystrom_uvt(KernelMatrix(datalocs, newlocs, parms, opts.kernfun),
-                       nyker, false)
-    UV0   = UVt(U0, V0)
-  end
-  # kernel matrix for the new locations:
-  Knew  = full(KernelMatrix(newlocs, newlocs, parms, opts.kernfun))
-  # Compute the predicted values and variances:
-  predicted_val = UV0'*(HK\data)
-  predicted_var = Symmetric(Knew - UV0.V*(UV0.U'*((HK\UV0.U)*UV0.V')))
-  return predicted_val, predicted_var
+  K0    = full(KernelMatrix(datalocs, newlocs, parms, opts.kernfun))
+  Kn    = full(KernelMatrix(newlocs, newlocs, parms, opts.kernfun))
+  return K0'*(HK\data), diag(Kn - K0'*(HK\K0))
 end
 
