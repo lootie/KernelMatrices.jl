@@ -30,16 +30,14 @@ function fillrow!(target::Vector{T}, M::KernelMatrix{T,N,A,Fn}, idx::Int64)::Not
   nothing
 end
 
-function getsortperm(x::Vector{T}, xsorted::Vector{T})::Vector{Int64} where{T}
-  sortperm = zeros(Int64, length(x))
-  for j in eachindex(x)
-    start = 1
-    while xsorted[j] != x[start]
-      start += 1
-    end
-    sortperm[j] = start
-  end
-  return sortperm
+function getsortperm(x, xsorted)::Vector{Int64}
+  D = Dict(zip(x, eachindex(x)))
+  return [D[xj] for xj in xsorted]
+end
+
+function data_reorder(data, x, xsorted)
+  D   = Dict(zip(x, data))
+  return [D[xj] for xj in xsorted]
 end
 
 function submatrix(K::KernelMatrix{T,N,A,Fn}, startj::Int64, stopj::Int64, 
