@@ -21,7 +21,6 @@ nsz     = 512
 popts   = maxlikopts(
   kernfun = kernfun,     # Kernel function
   dfuns   = dfuns,       # derivative functions
-  prec    = 0.0,         # Pointwise precision for off-diag blocks. Not used for Nystrom.
   level   = LogLevel(8), # The level of the HODLR, set to log2(N) - 8.
   rank    = 72,          # The fixed rank of the off-diagonal blocks when using Nystrom.
   saavecs = HODLR.givesaa(35, nsz, seed=1618), # vectors for stochastic trace estimation.

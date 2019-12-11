@@ -5,30 +5,27 @@ Base.size(M::KernelMatrix{T,N,A,Fn})    where{T,N,A,Fn} = (length(M.x1), length(
 Base.size(M::KernelMatrix{T,N,A,Fn}, j) where{T,N,A,Fn} = size(M)[j]
 Base.length(M::KernelMatrix{T,N,A,Fn})  where{T,N,A,Fn} = prod(size(M))
 
-function Base.getindex(M::KernelMatrix{T,0,A,Fn}, 
-                       j::Int64, k::Int64)::T where{T,A,Fn} 
+function Base.getindex(M::KernelMatrix{T,0,A,Fn}, j, k)::Array{T} where{T,A,Fn}
+  return [M.kernel(x, y) for x in view(M.x1, j), y in view(M.x2, k)]
+end
+
+function Base.getindex(M::KernelMatrix{T,N,A,Fn}, j, k)::Array{T} where{T,N,A,Fn}
+  return [M.kernel(x, y, M.parms) for x in view(M.x1, j), y in view(M.x2, k)]
+end
+
+function Base.getindex(M::KernelMatrix{T,0,A,Fn}, j::Int64, k::Int64)::T where{T,A,Fn} 
   return M.kernel(M.x1[j], M.x2[k])
 end
 
-function Base.getindex(M::KernelMatrix{T,N,A,Fn}, 
-                       j::Int64, k::Int64)::T where{T,N,A,Fn} 
+function Base.getindex(M::KernelMatrix{T,N,A,Fn}, j::Int64, k::Int64)::T where{T,N,A,Fn} 
   return M.kernel(M.x1[j], M.x2[k], M.parms)
 end
 
-function Base.getindex(M::KernelMatrix{T,N,A,Fn}, 
-                       ix::CartesianIndex{2})::T where{T,N,A,Fn} 
-  return M[ix[1], ix[2]]
-end
-
-function Base.getindex(M::KernelMatrix{T,N,A,Fn}, j, k)::Array{T} where{T<:Number,N,A,Fn}
-  return [M[jj,kk] for jj in eachindex(M.x1)[j], kk in eachindex(M.x2)[k]]
-end
-
-function full(M::KernelMatrix{T,N,A,Fn}, plel::Bool=false)::Matrix{T} where{T<:Number,N,A,Fn}
+function full(M::KernelMatrix{T,N,A,Fn}, plel::Bool=false)::Matrix{T} where{T,N,A,Fn}
   !plel && return M[:,:]
   out = SharedArray{T}(size(M, 1), size(M, 2))
   @sync @distributed for I in CartesianIndices(out)
-    @inbounds out[I] = M[I] 
+    @inbounds out[I] = M[I[1], I[2]] 
   end
   return collect(out)
 end

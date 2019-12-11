@@ -7,7 +7,7 @@ module HODLR
   import NearestNeighbors
   import KernelMatrices: KernelMatrix, submatrix, ACA, full, nystrom_uvt, NystromKernel
   import IterTools:      zip, chain, partition, drop, imap
-  import LinearAlgebra:  factorize, mul!, ldiv!, logdet, det, adjoint, transpose, inv, tr
+  import LinearAlgebra:  factorize, mul!, ldiv!, logdet, det, adjoint, transpose, inv, tr, Adjoint
 
   export KernelHODLR, RKernelHODLR, symmetricfactorize!, maxlikopts, LogLevel, FixedLevel, full
 

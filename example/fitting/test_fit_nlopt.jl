@@ -14,7 +14,7 @@ end
 # Set the size of the simulated problem and generate the maximum likelihood options:
 # (see the test_fit_trustregion.jl) for detailed annotations).
 nsz     = 512
-opts    = maxlikopts(kernfun=kernfun, dfuns=dfuns, prec=0.0, level=LogLevel(8),
+opts    = maxlikopts(kernfun=kernfun, dfuns=dfuns, level=LogLevel(8),
                      rank=72, saavecs=HODLR.givesaa(35, nsz, seed=1618), verbose=true)
 
 # simulate data points (or read in your not fake data points):

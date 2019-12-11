@@ -39,10 +39,6 @@ ldiv!(tmp1, HK.W, tvec)
 @test isapprox(tmp1, W\tvec)
 
 # Equality of factor transpose solve:
-HODLR._At_ldiv_B!(tmp2, HK.W, tmp1)
+ldiv!(tmp2, adjoint(HK.W), tmp1)
 @test isapprox(tmp2, transpose(W)\tmp1)
-
-# Equality of HODLR solve:
-HODLR._At_ldiv_B!(tmp2, HK.W, tmp1)
-@test isapprox(tmp2, (W*transpose(W))\tvec)
 

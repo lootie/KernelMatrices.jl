@@ -1,10 +1,12 @@
 
-# This is a copy of the external repository https://bitbucket.org/cgeoga/BlockDiagonal.jl.git.
-# Because making unregistered packages depend on other unregistered packages is an open question
-# about design decision at the moment, I'm including the full source here and just absorbing the
-# code. Not ideal, but I don't plan to change this code much, and it was a very simple dependency.
+# This is a copy of the external repository
+# https://bitbucket.org/cgeoga/BlockDiagonal.jl.git.  Because making
+# unregistered packages depend on other unregistered packages is an open
+# question about design decision at the moment, I'm including the full source
+# here and just absorbing the code. Not ideal, but I don't plan to change this
+# code much, and it was a very simple dependency.
 
-struct BDiagonal{T, MT} <: AbstractMatrix{T}
+struct BDiagonal{T, MT} #<: AbstractMatrix{T}
   V  :: Vector{MT}
   Ix :: Vector{NTuple{4, Int64}} 
 end

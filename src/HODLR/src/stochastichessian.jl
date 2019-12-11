@@ -51,7 +51,7 @@ end
 function HODLR_hess_tr1_sym_diag(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, vec::Vector{T}) where{T<:Number}
   tp1 = Array{T}(undef, length(vec))
   tp2 = Array{T}(undef, length(vec))
-  _At_ldiv_B!(tp1, HK.W, vec)
+  ldiv!(tp1, adjoint(HK.W), vec)
   ldiv!(tp2, HK.W, DKj*tp1)
   return dot(tp2, tp2)
 end
@@ -60,7 +60,7 @@ function HODLR_hess_tr1_sym_offdiag(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T},
                                     DKk::DerivativeHODLR{T}, vec::Vector{T}) where{T<:Number}
   tp1 = Array{T}(undef, length(vec))
   tp2 = Array{T}(undef, length(vec))
-  _At_ldiv_B!(tp1, HK.W, vec)
+  ldiv!(tp1, adjoint(HK.W), vec)
   ldiv!(tp2, HK.W, DKj*tp1 + DKk*tp1)
   return dot(tp2, tp2)
 end
@@ -69,7 +69,7 @@ function HODLR_hess_tr2(HK::KernelHODLR{T}, DKj::DerivativeHODLR{T}, DKk::Deriva
                         D2B2::Vector{Vector{SecondDerivativeBlock{T}}}, D2BL::Vector{Symmetric{T,Matrix{T}}},
                         Sjk::Symmetric{T, Matrix{T}}, vec::Vector{T}) where{T<:Number}
   tp1 = Array{T}(undef, length(vec))
-  _At_ldiv_B!(tp1, HK.W, vec)
+  ldiv!(tp1, adjoint(HK.W), vec)
   return dot(tp1, Deriv2mul(DKj, DKk, D2B2, D2BL, Sjk, tp1))
 end
 

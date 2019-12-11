@@ -2,7 +2,7 @@
 function HODLR_trace_apply(HK::KernelHODLR{T}, HKj::DerivativeHODLR{T}, vec::Vector{T})::T where{T<:Number}
   tmp1 = Array{T}(undef, length(vec))
   tmp2 = Array{T}(undef, length(vec))
-  _At_ldiv_B!(tmp1, HK.W, vec)
+  ldiv!(tmp1, adjoint(HK.W), vec)
   mul!(tmp2, HKj, tmp1)
   return dot(tmp1, tmp2)
 end

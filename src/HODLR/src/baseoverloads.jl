@@ -18,13 +18,20 @@ function Base.size(W::LowRankW{T}, j::Int64)::Int64 where{T<:Number}
   return ifelse(j==1, size(W.M,1), size(W.M,2))
 end
 
+function Base.size(W::FactorHODLR{T}) where{T<:Number}
+  x = sum(x->size(x, 1), W.leafW)
+  return (x,x)
+end
+
 function det(W::LowRankW{T})::Float64 where{T<:Number}
   return det(I + t_mul(W.M, W.M)*W.X)
 end
 
-Base.adjoint(M::LowRankW{T}) where{T<:Number} = LowRankW(M.M, Matrix{Float64}(M.X'))
+LinearAlgebra.adjoint(M::LowRankW{T}) where{T<:Number} = Adjoint{T, LowRankW{T}}(M) 
 
-Base.adjoint(A::UVt{T}) where{T<:Number} = UVt(A.V, A.U)
+LinearAlgebra.adjoint(A::UVt{T}) where{T<:Number} = Adjoint{T, UVt{T}}(A) 
+
+LinearAlgebra.adjoint(W::FactorHODLR{T}) where{T<:Number} = Adjoint{T, FactorHODLR{T}}(W) 
 
 function mul!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
@@ -37,12 +44,13 @@ function mul!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:
   return target
 end
 
-function _At_mul_B!(target::StridedArray, W::LowRankW{T}, 
-                    src::StridedArray) where{T<:Number}
+function mul!(target::StridedArray, W::Adjoint{T, LowRankW{T}}, 
+              src::StridedArray) where{T<:Number}
+  Wp = W.parent
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
-  mul!(target, W.M, t_mul(W.X, t_mul(W.M, src)))
+  mul!(target, Wp.M, Wp.X't_mul(Wp.M, src))
   @simd for j in eachindex(target)
      @inbounds target[j] += src[j]
   end
@@ -51,6 +59,12 @@ end
 
 function ldiv!(W::LowRankW{T}, target::StridedArray) where{T<:Number}
   target .-= W.M*lrx_solterm(W, W.M'target)
+  return target
+end
+
+function ldiv!(W::Adjoint{T,LowRankW{T}}, target::StridedArray) where{T<:Number}
+  Wp = W.parent
+  target .-= Wp.M*lrx_solterm_t(Wp, Wp.M'target)
   return target
 end
 
@@ -65,12 +79,13 @@ function ldiv!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<
   return target
 end
 
-function _At_ldiv_B!(target::StridedArray, W::LowRankW{T}, 
-                     src::StridedArray) where{T<:Number}
+function ldiv!(target::StridedArray, W::Adjoint{T,LowRankW{T}}, 
+               src::StridedArray) where{T<:Number}
+  Wp = W.parent
   # Zero out target:
   fill!(target, zero(eltype(target)))  
   # Do multiplication:
-  mul!(target, W.M, -lrx_solterm_t(W, t_mul(W.M, src)))
+  mul!(target, W.M, -lrx_solterm_t(Wp, t_mul(Wp.M, src)))
   @simd for j in eachindex(target)
      @inbounds target[j] += src[j]
   end
@@ -93,22 +108,19 @@ function mul!(target::StridedVector, W::FactorHODLR{T},
   return target
 end
 
-function _At_mul_B!(target::StridedVector, W::FactorHODLR{T}, 
-                    src::StridedVector) where{T<:Number}
+function mul!(target::StridedVector, W::Adjoint{T,FactorHODLR{T}}, 
+              src::StridedVector) where{T<:Number}
+  Wp = W.parent
   # Zero out the target vector, get tmp vector:
   fill!(target, zero(eltype(target)))
   # Apply the leaf vectors:
-  tmp = BDiagonal(W.leafW)'src
+  tmp = BDiagonal(Wp.leafW)'src
   # Apply the nonleafW vectors in the correct order:
-  for j in eachindex(W.nonleafW)
-    mul!(target, BDiagonal(W.nonleafW[j])', tmp)
+  for j in eachindex(Wp.nonleafW)
+    mul!(target, BDiagonal(Wp.nonleafW[j])', tmp)
     tmp .= target
   end
   return target
-end
-
-function _At_mul_B!(target::StridedVector, A::StridedMatrix, src::StridedVector)
-  mul!(target, transpose(A), src)
 end
 
 function ldiv!(target::StridedVector, W::FactorHODLR{T}, 
@@ -124,15 +136,16 @@ function ldiv!(target::StridedVector, W::FactorHODLR{T},
   return target
 end
 
-function _At_ldiv_B!(target::StridedVector, W::FactorHODLR{T}, 
-                     src::StridedVector) where{T<:Number}
+function ldiv!(target::StridedVector, W::Adjoint{T,FactorHODLR{T}}, 
+               src::StridedVector) where{T<:Number}
+  Wp = W.parent
   target .= src
   # Apply the nonleafW vectors in the correct order:
-  for j in length(W.nonleafW):-1:1
-    ldiv!(BDiagonal(W.nonleafW[j])', target)
+  for j in length(Wp.nonleafW):-1:1
+    ldiv!(BDiagonal(Wp.nonleafW[j])', target)
   end
   # Apply the leaf vectors:
-  ldiv!(BDiagonal(W.leafWf)', target)
+  ldiv!(BDiagonal(Wp.leafWf)', target)
   return target
 end
 
@@ -159,15 +172,10 @@ function mul!(target::StridedVector, K::KernelHODLR{T},
     fill!(target, zero(eltype(target)))
     # Multiple by W^{T}, then by W:
     tmp = Array{eltype(target)}(undef, length(target))
-    _At_mul_B!(tmp, K.W, src)
+    mul!(tmp, adjoint(K.W), src)
     mul!(target, K.W, tmp)
   end
   return target
-end
-
-function _At_mul_B!(target::StridedVector, K::KernelHODLR{T}, 
-                    src::StridedVector) where{T<:Number}
-  return mul!(target, K, src)
 end
 
 function ldiv!(target::StridedVector, K::KernelHODLR{T}, 
@@ -178,14 +186,9 @@ function ldiv!(target::StridedVector, K::KernelHODLR{T},
     # divide by W, then by W^{T}:
     tmp = Array{eltype(target)}(undef, length(target))
     ldiv!(tmp, K.W, src)
-    _At_ldiv_B!(target, K.W, tmp)
+    ldiv!(target, adjoint(K.W), tmp)
   end
   return target
-end
-
-function _At_ldiv_B!(target::StridedVector, K::KernelHODLR{T}, 
-                     src::StridedVector) where{T<:Number}
-  return ldiv!(target, K, src)
 end
 
 function logdet(K::KernelHODLR{T})::Float64 where{T<:Number}
