@@ -90,7 +90,7 @@ function ACA(M::Union{Matrix{T}, KernelMatrix{T,N,A,Fn}}, rtol::Float64,
 
 end
 
-function nystrom_uvt(K::KernelMatrix{T,N,A,Fn}, NK::NystromKernel{T,N,A,Fn}, 
+function nystrom_uvt(K::KernelMatrix{T,N,A,Fn}, NK::NystromKernel{T,A}, 
                      plel::Bool)::Tuple{Matrix{T},Matrix{T}} where{T<:Number,N,A,Fn}
   typeof(K.x1[1]) == typeof(NK.lndmk[1]) || error("Nystrom landmarks don't agree with K points.")
   K1  = KernelMatrix(K.x1, NK.lndmk, K.parms, K.kernel)

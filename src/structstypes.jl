@@ -2,34 +2,40 @@
 mutable struct KernelMatrix{T, N, A, Fn} 
   x1       ::AbstractVector{A}
   x2       ::AbstractVector{A}
-  parms    ::SVector{N,T}
+  parms    ::NTuple{N}
   kernel   ::Fn
+end
+
+function KernelMatrix(pts, pts2, fn::Function)
+  eltype(pts) == eltype(pts2) || error("Eltype of pts and pts2 must agree.")
+  A  = eltype(pts)
+  T  = typeof(fn(pts[1], pts2[1]))
+  return KernelMatrix{T,0,A,typeof(fn)}(pts, pts2, NTuple{0,Float64}(), fn)
 end
 
 function KernelMatrix(pts, pts2, prms::Vector, fn::Function)
   eltype(pts) == eltype(pts2) || error("Eltype of pts and pts2 must agree.")
-  A = eltype(pts)
-  T = eltype(prms)
-  return KernelMatrix{T,length(prms),A,typeof(fn)}(pts, pts2, SVector{length(prms), T}(prms), fn)
+  A  = eltype(pts)
+  T  = typeof(fn(pts[1], pts2[1], prms))
+  tp = convert(NTuple{length(prms), eltype(prms)}, tuple(prms...))
+  return KernelMatrix{T,length(tp),A,typeof(fn)}(pts, pts2, tp, fn)
 end
 
-mutable struct NystromKernel{T, N, A, Fn}  <: Function 
-  Kernel::Fn
-  parms::SVector{N,T}
+mutable struct NystromKernel{T, A}  <: Function 
   lndmk::Vector{A}
   F::Union{Cholesky{T, Matrix{T}}, BunchKaufman{T, Matrix{T}}}
 end
 
-function NystromKernel(kern::Function, landmark::AbstractVector, 
-                       parms::AbstractVector, ispd::Bool)::NystromKernel
-  T   = eltype(parms)
+function NystromKernel(kern::Function, landmark, ispd::Bool)::NystromKernel
+  T   = typeof(kern(landmark[1], landmark[1]))
   M   = zeros(T, length(landmark), length(landmark))
   for j in eachindex(landmark)
     for k in eachindex(landmark)
-      @inbounds M[j,k] = kern(landmark[j], landmark[k], parms)
+      @inbounds M[j,k] = Kjk(landmark[j], landmark[k])
     end
   end
-  F = ispd ? cholesky!(Symmetric(M)) : bkfact!(Symmetric(M))
-  return NystromKernel(kern, SVector{length(parms), Float64}(parms), landmark, F)
+  F  = ispd ? cholesky!(Symmetric(M)) : bkfact!(Symmetric(M))
+  pt = 
+  return NystromKernel(landmark, F)
 end
 

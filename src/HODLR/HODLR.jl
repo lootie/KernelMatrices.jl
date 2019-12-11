@@ -5,7 +5,7 @@ module HODLR
   using Statistics, LinearAlgebra, Distributed, Random
 
   import NearestNeighbors
-  import KernelMatrices: KernelMatrix, submatrix, ACA, submatrix_nystrom, nlfisub, full, nystrom_uvt, NystromKernel
+  import KernelMatrices: KernelMatrix, submatrix, ACA, full, nystrom_uvt, NystromKernel
   import IterTools:      zip, chain, partition, drop, imap
   import LinearAlgebra:  factorize, mul!, ldiv!, logdet, det, adjoint, transpose, inv, tr
 
