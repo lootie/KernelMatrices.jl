@@ -24,16 +24,13 @@ function data_reorder(data, x, xsorted)
   return [D[xj] for xj in xsorted]
 end
 
-function submatrix(K::KernelMatrix{T,N,A,Fn}, startj::Int64, stopj::Int64, 
-                   startk::Int64, 
-                   stopk::Int64)::KernelMatrix{T,N,A,Fn} where{T<:Number,N,A,Fn}
-  return KernelMatrix(view(K.x1, startj:stopj), view(K.x2, startk:stopk), K.parms, K.kernel)
+function submatrix(K::KernelMatrix, startj::Int64, stopj::Int64, 
+                   startk::Int64, stopk::Int64)
+  return KernelMatrix(view(K.x1, startj:stopj), view(K.x2, startk:stopk), 
+                      K.parms, K.kernel)
 end
 
-function submatrix(K::KernelMatrix{T,N,A,Fn}, 
-                   v::SVector{4, Int64})::KernelMatrix{T,N,A,Fn} where{T<:Number,N,A,Fn}
-  return submatrix(K, v[1], v[2], v[3], v[4])
-end
+@inline submatrix(K, v) = submatrix(K, v...)
 
 function vv_to_m(V::Vector{Vector{T}})::Matrix{T} where{T}
   V1len = length(V[1])

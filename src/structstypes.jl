@@ -13,7 +13,7 @@ function KernelMatrix(pts, pts2, fn::Function)
   return KernelMatrix{T,0,A,typeof(fn)}(pts, pts2, NTuple{0,Float64}(), fn)
 end
 
-function KernelMatrix(pts, pts2, prms::Vector, fn::Function)
+function KernelMatrix(pts, pts2, prms, fn::Function)
   eltype(pts) == eltype(pts2) || error("Eltype of pts and pts2 must agree.")
   A  = eltype(pts)
   T  = typeof(fn(pts[1], pts2[1], prms))
@@ -31,7 +31,7 @@ function NystromKernel(kern::Function, landmark, ispd::Bool)::NystromKernel
   M   = zeros(T, length(landmark), length(landmark))
   for j in eachindex(landmark)
     for k in eachindex(landmark)
-      @inbounds M[j,k] = Kjk(landmark[j], landmark[k])
+      @inbounds M[j,k] = kern(landmark[j], landmark[k])
     end
   end
   F  = ispd ? cholesky!(Symmetric(M)) : bkfact!(Symmetric(M))

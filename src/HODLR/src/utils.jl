@@ -1,6 +1,6 @@
 
-mul_t(A, B) = A*transpose(B)
-t_mul(A, B) = transpose(A)*B
+@inline mul_t(A, B) = A*transpose(B)
+@inline t_mul(A, B) = transpose(A)*B
 
 function mapf(f::Function, v, nwrk::Int64, plel::Bool)
   if plel && nwrk > 1 
@@ -126,9 +126,12 @@ end
 # The many, many parentheses are to ensure that things are done in the reasonable order.
 # Like, for matrices A, B, and vector v, we definitely would want to do A*(B*v) instead of 
 # (A*B)*v, for example. Unfortunately, the code looks all the more like an unreadable mess for it.
-function SDBlock_mul(Bj::DerivativeBlock{T}, Bk::DerivativeBlock{T}, Bjk::SecondDerivativeBlock{T},
-                     src::Vector{T}, Sp::Cholesky{T, Matrix{T}}, Spj::Symmetric{T,Matrix{T}},
-                     Spk::Symmetric{T, Matrix{T}}, Spjk::Symmetric{T, Matrix{T}}) where{T<:Number}
+function SDBlock_mul(Bj::DerivativeBlock{T}, Bk::DerivativeBlock{T}, 
+                     Bjk::SecondDerivativeBlock{T},
+                     src::Vector{T}, Sp::Cholesky{T, Matrix{T}}, 
+                     Spj::Symmetric{T,Matrix{T}},
+                     Spk::Symmetric{T, Matrix{T}}, 
+                     Spjk::Symmetric{T, Matrix{T}}) where{T<:Number}
   # The first term:
   out  = Bjk.K1pjk*(Sp\(Bj.Kp2*src))
   out -= Bj.K1pd*(Sp\(Spk*(Sp\(Bj.Kp2*src))))
@@ -148,7 +151,8 @@ function SDBlock_mul(Bj::DerivativeBlock{T}, Bk::DerivativeBlock{T}, Bjk::Second
 end
 
 function SDBlock_mul_t(Bj::DerivativeBlock{T}, Bk::DerivativeBlock{T},
-                       Bjk::SecondDerivativeBlock{T}, src::Vector{T}, Sp::Cholesky{T,Matrix{T}},
+                       Bjk::SecondDerivativeBlock{T}, src::Vector{T}, 
+                       Sp::Cholesky{T,Matrix{T}},
                        Spj::Symmetric{T, Matrix{T}}, Spk::Symmetric{T, Matrix{T}},
                        Spjk::Symmetric{T, Matrix{T}}) where{T<:Number}
   # The first term:
@@ -170,7 +174,8 @@ function SDBlock_mul_t(Bj::DerivativeBlock{T}, Bk::DerivativeBlock{T},
 end
 
 function Deriv2mul(DKj::DerivativeHODLR{T}, DKk::DerivativeHODLR{T},
-                   D2B2::Vector{Vector{SecondDerivativeBlock{T}}}, D2BL::Vector{Symmetric{T,Matrix{T}}},
+                   D2B2::Vector{Vector{SecondDerivativeBlock{T}}}, 
+                   D2BL::Vector{Symmetric{T,Matrix{T}}},
                    Sjk::Symmetric{T, Matrix{T}}, src::StridedVector) where{T<:Number}
   # Zero out the target vector:
   target = zeros(eltype(src), length(src))
@@ -192,7 +197,8 @@ end
 
 # This will be SLOW:
 function Deriv2full(DKj::DerivativeHODLR{T}, DKk::DerivativeHODLR{T},
-                    D2B2::Vector{Vector{SecondDerivativeBlock{T}}}, D2BL::Vector{Symmetric{T,Matrix{T}}},
+                    D2B2::Vector{Vector{SecondDerivativeBlock{T}}}, 
+                    D2BL::Vector{Symmetric{T,Matrix{T}}},
                     Sjk::Symmetric{T, Matrix{T}}, sz::Int64) where{T<:Number}
   out = zeros(T, sz, sz)
   for j in 1:sz

@@ -54,7 +54,6 @@ function ldiv!(W::LowRankW{T}, target::StridedArray) where{T<:Number}
   return target
 end
 
-
 function ldiv!(target::StridedArray, W::LowRankW{T}, src::StridedArray) where{T<:Number}
   # Zero out target:
   fill!(target, zero(eltype(target)))  

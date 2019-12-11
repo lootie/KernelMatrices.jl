@@ -18,9 +18,10 @@ end
 function Base.getindex(M::KernelMatrix{T,N,A,Fn}, 
                        ix::CartesianIndex{2})::T where{T,N,A,Fn} 
   return M[ix[1], ix[2]]
+end
 
 function Base.getindex(M::KernelMatrix{T,N,A,Fn}, j, k)::Array{T} where{T<:Number,N,A,Fn}
-  return [M[jj,kk] for jj in j, kk in k]
+  return [M[jj,kk] for jj in eachindex(M.x1)[j], kk in eachindex(M.x2)[k]]
 end
 
 function full(M::KernelMatrix{T,N,A,Fn}, plel::Bool=false)::Matrix{T} where{T<:Number,N,A,Fn}

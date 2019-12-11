@@ -29,11 +29,11 @@ function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64,
     end
     K.x1 == K.x2 || error("Need x1 == x2 for Nystrom approx.")
     nyind = Int64.(round.(LinRange(1, size(K)[1], maxrank)))
-    nyker = NystromKernel(K.kernel, K.x1[nyind], K.parms, true)
+    nyker = NystromKernel((x,y)->K.kernel(x,y,K.parms), K.x1[nyind], true)
   end
 
   # Get the leaves in position:
-  leaves = mapf(x->Symmetric(full(nlfisub(K, x), plel)), leafinds, nwrk, plel)
+  leaves = mapf(x->Symmetric(full(submatrix(K, x), plel)), leafinds, nwrk, plel)
 
   # Get the rest of the decompositions of the non-leaf nodes in place:
   U = Vector{Vector{Matrix{T}}}(undef, level)  
@@ -41,10 +41,10 @@ function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64,
   for j in eachindex(U)
     if nystrom
       nonleafinds[j]
-      tmpUV = mapf(x->nystrom_uvt(nlfisub(K, x), nyker, plel), 
+      tmpUV = mapf(x->nystrom_uvt(submatrix(K, x), nyker, plel), 
                    nonleafinds[j], nwrk, plel)
     else
-      tmpUV = mapf(x->ACA(nlfisub(K, x), ep, maxrank), 
+      tmpUV = mapf(x->ACA(submatrix(K, x), ep, maxrank), 
                    nonleafinds[j], nwrk, plel)
     end
     U[j] = map(x->x[1], tmpUV)
@@ -77,12 +77,12 @@ function DerivativeHODLR(K::KernelMatrix{T,N,A,Fn}, dfun::Function, HK::KernelHO
   dK     = KernelMatrix(K.x1, K.x2, K.parms, dfun)
 
   # Get the leaves in position:
-  leaves = mapf(x->Symmetric(full(nlfisub(dK, x), plel)), HK.leafindices, nwrk, plel)
+  leaves = mapf(x->Symmetric(full(submatrix(dK, x), plel)), HK.leafindices, nwrk, plel)
 
   # Get the non-leaves in place:
   B      = Vector{Vector{DerivativeBlock{T}}}(undef, HK.lvl)
   for j in eachindex(B)
-    B[j] = mapf(x->DBlock(nlfisub(K, x), dfun, lndmk, plel), 
+    B[j] = mapf(x->DBlock(submatrix(K, x), dfun, lndmk, plel), 
                 HK.nonleafindices[j], nwrk, plel)
   end
 
@@ -97,7 +97,7 @@ function SecondDerivativeLeaves(K::KernelMatrix{T,N,A,Fn}, djk::Function,
                                 lfi::AbstractVector, 
                                 plel::Bool=false) where{T<:Number,N,A,Fn}
   d2K    = KernelMatrix(K.x1, K.x2, K.parms, djk)
-  return mapf(x->Symmetric(full(nlfisub(d2K, x), plel)), lfi, nworkers(), plel)
+  return mapf(x->Symmetric(full(submatrix(d2K, x), plel)), lfi, nworkers(), plel)
 end
 
 
@@ -108,7 +108,7 @@ function SecondDerivativeBlocks(K::KernelMatrix{T,N,A,Fn}, djk::Function,
                                 mrnk::Int64, plel::Bool=false) where{T<:Number,N,A,Fn}
   d2K    = KernelMatrix(K.x1, K.x2, K.parms, djk)
   lndmk  = K.x1[Int64.(round.(LinRange(1, size(K)[1], mrnk)))]
-  B      = map(nlf -> mapf(x->SBlock(nlfisub(d2K, x), djk, lndmk), 
+  B      = map(nlf -> mapf(x->SBlock(submatrix(d2K, x), djk, lndmk), 
                            nlf, nworkers(), plel), nlfi)
   return B
 end
