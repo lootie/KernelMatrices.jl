@@ -32,14 +32,3 @@ end
 
 @inline submatrix(K, v) = submatrix(K, v...)
 
-function vv_to_m(V::Vector{Vector{T}})::Matrix{T} where{T}
-  V1len = length(V[1])
-  Out   = zeros(T, V1len, length(V))
-  for j in eachindex(V)
-    @simd for k in 1:size(Out, 1)
-      @inbounds Out[k,j] = V[j][k]
-    end
-  end
-  return Out
-end
-

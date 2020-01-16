@@ -2,9 +2,11 @@
 @inline mul_t(A, B) = A*transpose(B)
 @inline t_mul(A, B) = transpose(A)*B
 
-function mapf(f::Function, v, nwrk::Int64, plel::Bool)
-  if plel && nwrk > 1 
-    return pmap(f, v, batch_size=max(1, div(length(v), nwrk)))
+function mapf(f::Function, v, plel::Bool, ptype::Symbol=:threaded)
+  if plel && nworkers() > 1 && ptype == :distributed
+    return pmap(f, v)
+  elseif plel && Threads.nthreads() > 1 && ptype == :threaded
+    return tcollect(Map(f), v)
   else
     return map(f, v)
   end
@@ -24,61 +26,40 @@ function givesaa(len::Int64, sz::Int64; seed::Int64=0)::Vector{Vector{Float64}}
   return vecs
 end
 
-# Must be of a Pos-Def Symmetric matrix!
-function symfact(A::Symmetric{T, Matrix{T}})::Matrix{T} where{T<:Number}
-  factd = eigen(A)
-  Out   = factd.vectors
-  for j in 1:size(Out, 1)
-    @inbounds Out[:,j] .*= sqrt(factd.values[j])
-  end
-  return Out
-end
-
-function Tmatrix(R1::Matrix{T}, R2::Matrix{T})::Symmetric{Float64} where{T<:Number}
-  R1R2t = mul_t(R1, R2)
-  sz    = size(R1R2t)[1]
-  Out   = Symmetric([Matrix(I, sz, sz) R1R2t; transpose(R1R2t) Matrix(I, sz, sz)])
-  return Out
-end
-
 function lrsymfact(U12::Matrix{T}, U21::Matrix{T})::LowRankW{T} where{T<:Number}
-  sz     = size(U12)[2]
-  qr12   = qr!(U12)
-  qr21   = qr!(U21)
-  Q1, R1 = Array(qr12.Q), qr12.R
-  Q2, R2 = Array(qr21.Q), qr21.R
-  X      = symfact(Tmatrix(R1, R2))-I
-  return LowRankW(cat(Q1, Q2, dims=[1,2]), X)
+  qr12  = qr!(U12)
+  qr21  = qr!(U21)
+  R1R2t = qr12.R*qr21.R'
+  X     = cholesky(Symmetric([I R1R2t; R1R2t' I])).L-I
+  return LowRankW(cat(Matrix(qr12.Q), Matrix(qr21.Q), dims=[1,2]), X)
 end
 
 function lrx_solterm(W::LowRankW{T}, v::Array{T}) where{T<:Number}
-  luf  = lu!(W.X + I)
+  luf  = W.X + I 
   Xv   = W.X*v
   return Xv - W.X*(luf\Xv)
 end
 
 function lrx_solterm_t(W::LowRankW{T}, v::Array{T}) where{T<:Number}
-  luf  = lu!(transpose(W.X) + I)
+  luf  = W.X' + I 
   Xv   = t_mul(W.X, v)
   return Xv - t_mul(W.X, (luf\Xv))
 end
 
-# This function really could use a decent parallel implementation. But I just don't really see how
-# to do that considering that I'm mutating memory all over the place.
-function invapply!(Wvec::Union{AbstractVector{LowRankW{T}}, AbstractVector{Matrix{T}},
-                               AbstractVector{LU{T, Matrix{T}}}}, lvl::Int64,
+# If we could interleave the V and U matrices (in that order, so starting with
+# V[1], then U[1], then V[2], ...) into a matrix M, then this function would
+# just be BDiagonal(Wvec)\M. That's really what's going on here. But to avoid
+# copies, I play a slightly more ornate game of breaking up the Wvec into the
+# right sized pieces to apply to each Uj and Vj individually.
+function invapply!(Wvec, lvl::Int64,
                    Uvec::Vector{Vector{Matrix{Float64}}}, 
                    Vvec::Vector{Vector{Matrix{Float64}}})::Nothing where{T<:Number}
-  jmp = Int64(length(Wvec)/(2*length(Uvec[lvl])))
-  ind = collect(1:jmp)
-  for j in 1:2*length(Uvec[lvl])
-    index = div(j+1, 2)
-    if isodd(j)
-      @inbounds ldiv!(BDiagonal(Wvec[ind]), Vvec[lvl][index])
-    else
-      @inbounds ldiv!(BDiagonal(Wvec[ind]), Uvec[lvl][index])
-    end
-    ind .+= jmp
+  stepsz = div(length(Wvec), 2*length(Uvec[lvl]))
+  ind    = collect(1:stepsz)
+  for (Vj, Uj) in zip(Vvec[lvl], Uvec[lvl])
+    ldiv!(BDiagonal(Wvec[ind]),         Vj) # @spawn?
+    ldiv!(BDiagonal(Wvec[ind.+stepsz]), Uj) # @spawn?
+    ind .+= 2*stepsz
   end
   nothing
 end

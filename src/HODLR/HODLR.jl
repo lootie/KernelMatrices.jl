@@ -1,7 +1,7 @@
 
 module HODLR
 
-  using  StaticArrays, KernelMatrices, SharedArrays
+  using Pkg, StaticArrays, KernelMatrices, SharedArrays, Transducers
   using Statistics, LinearAlgebra, Distributed, Random
 
   import NearestNeighbors
@@ -9,12 +9,12 @@ module HODLR
   import IterTools:      zip, chain, partition, drop, imap
   import LinearAlgebra:  factorize, mul!, ldiv!, logdet, det, adjoint, transpose, inv, tr, Adjoint
 
-  export KernelHODLR, RKernelHODLR, symmetricfactorize!, maxlikopts, LogLevel, FixedLevel, full
+  export KernelHODLR, RKernelHODLR, symmetricfactorize!, maxlikopts, LogLevel, FixedLevel, full, maxlikdata
 
   include("./src/BlockDiagonal.jl")
 
   include("./src/structstypes.jl")
-  
+
   include("./src/utils.jl")
 
   include("./src/baseoverloads.jl")
@@ -35,5 +35,8 @@ module HODLR
 
   include("./src/exactmaxlik.jl")
 
+  if haskey(Pkg.installed(), "Ipopt")
+    using Ipopt
+    include("./src/ipoptinterface.jl")
+  end
 end
-

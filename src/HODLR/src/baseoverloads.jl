@@ -126,9 +126,9 @@ end
 function ldiv!(target::StridedVector, W::FactorHODLR{T}, 
                src::StridedVector) where{T<:Number}
   # Zero out the target vector, get tmp vector:
-  fill!(target, zero(eltype(target)))
+  target .= src
   # Apply the leaf vectors:
-  ldiv!(target, BDiagonal(W.leafWf), src)
+  ldiv!(BDiagonal(W.leafW), target)
   # Apply the nonleafW vectors in the correct order:
   for j in eachindex(W.nonleafW)
     ldiv!(BDiagonal(W.nonleafW[j]), target)
@@ -145,7 +145,7 @@ function ldiv!(target::StridedVector, W::Adjoint{T,FactorHODLR{T}},
     ldiv!(BDiagonal(Wp.nonleafW[j])', target)
   end
   # Apply the leaf vectors:
-  ldiv!(BDiagonal(Wp.leafWf)', target)
+  ldiv!(BDiagonal(Wp.leafW)', target)
   return target
 end
 

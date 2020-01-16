@@ -39,13 +39,12 @@ end
 # A struct to efficiently store low rank matrices of the form (I + M*X*M')(I + M*X*M')'.
 mutable struct LowRankW{T<:Number} <: LinearAlgebra.Factorization{T}
   M              ::Matrix{T}
-  X              ::Matrix{T}
+  X              ::LowerTriangular{T, Matrix{T}}
 end
 
 # A struct for the symmetric factor of a HODLR matrix.
 mutable struct FactorHODLR{T<:Number} <: LinearAlgebra.Factorization{T}
-  leafW          :: Vector{Matrix{T}}
-  leafWf         :: Vector{LU{T, Matrix{T}}}
+  leafW          :: Vector{LowerTriangular{T, Matrix{T}}}
   nonleafW       :: Vector{Vector{LowRankW{T}}}
 end
 
@@ -98,6 +97,7 @@ end
 mutable struct Maxlikopts
   kernfun  :: Function         # The kernel function
   dfuns    :: Vector{Function} # The vector of derivative functions
+  d2funs   :: Union{Nothing, Vector{Vector{Function}}} # second derivative functions.
   lvl      :: HierLevel        # The number of dyadic splits of the matrix dimensions. 
   mrnk     :: Int64            # The fixed rank of the off-diagonal blocks.
   saav     :: Vector{Vector{Float64}}   # The SAA vectors
@@ -105,5 +105,11 @@ mutable struct Maxlikopts
   fpll     :: Bool             # Parallel flag for factorization.
   verb     :: Bool             # Verbose flag for optimization path and timings.
   saa_fix  :: Bool             # Flag for whether or not to fix the SAA vectors.
+end
+
+
+mutable struct Maxlikdata{P,T}
+  pts_s :: Vector{P}
+  dat_s :: Vector{T}
 end
 

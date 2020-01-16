@@ -27,8 +27,7 @@ function _solve_subproblem_exact(g::Vector, B::Symmetric{Float64, Matrix{Float64
   return pl
 end
 
-function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
-                     d2funs::Vector{Vector{Function}}, opts::Maxlikopts;
+function trustregion(init::Vector, data::Maxlikdata, opts::Maxlikopts;
                      profile::Bool=false, vrb::Bool=false, dmax::Float64=1.0,
                      dini::Float64=0.5, eta::Float64=0.125,
                      rtol::Float64=1.0e-8, atol::Float64=1.0e-5,
@@ -43,17 +42,17 @@ function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
     vrb && println(xv)
     t1 = @elapsed begin
     if profile
-      fx = nlpl_objective(xv, gx, loc_s, dat_s, opts)
+      fx = nlpl_objective(xv, gx, data, opts)
     else
-      fx = nll_objective(xv, gx, loc_s, dat_s, opts)
+      fx = nll_objective(xv, gx, data, opts)
     end
     end
     vrb && println("objective+gradient  call took this long:  $(round(t1, digits=4))")
     t2 = @elapsed begin
     if profile
-      hx .= nlpl_hessian(xv, loc_s, dat_s, opts, d2funs)
+      hx .= nlpl_hessian(xv, data, opts)
     else
-      hx .= nll_hessian(xv, loc_s, dat_s, opts, d2funs)
+      hx .= nll_hessian(xv, data, opts)
     end
     end
     vrb && println("Hessian call took this long:              $(round(t2, digits=4))")
@@ -62,9 +61,9 @@ function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
     # Solve the corresponding sub-problem:
     ro  .= _solve_subproblem_exact(gx, Symmetric(hx), dl)
     if profile
-      fxp  = nlpl_objective(xv.+ro, Array{Float64}(undef, 0), loc_s, dat_s, opts)
+      fxp  = nlpl_objective(xv.+ro, Array{Float64}(undef, 0), data, opts)
     else
-      fxp  = nll_objective(xv.+ro, Array{Float64}(undef, 0), loc_s, dat_s, opts)
+      fxp  = nll_objective(xv.+ro, Array{Float64}(undef, 0), data, opts)
     end
     r1   = _rho(fxp, xv, fx, gx, Symmetric(hx), ro)
     # Perform tests on solution of sub-problem:
@@ -80,17 +79,17 @@ function trustregion(init::Vector, loc_s::AbstractVector, dat_s::AbstractVector,
   end
   vrb && println("Total number of calls: $cnt")
   if profile
-    pushfirst!(xv, nlpl_scale(xv, loc_s, dat_s, opts))
+    pushfirst!(xv, nlpl_scale(xv, data, opts))
   end
   return cnt, xv
 end
 
-function fisherscore(init, loc_s, dat_s, opts; vrb=false,
+function fisherscore(init, data, opts; vrb=false,
                      g_tol=1.0e-8, s_tol=1.0e-8, maxit=50)
   old, new, Fj = deepcopy(init), deepcopy(init), zeros(length(init), length(init))
   for j in 1:maxit
     vrb && println(new)
-    gj, Fj = grad_and_fisher_matrix(old, loc_s, dat_s, opts)
+    gj, Fj = grad_and_fisher_matrix(old, data, opts)
     new    = old - Fj\gj
     abs2(norm(gj)) < g_tol && (vrb && println("STOP: gradient tol reached") ; break)
     abs2(norm(old-new)) < g_tol && (vrb && println("STOP: step tol reached") ; break)

@@ -18,29 +18,29 @@ function profile_negloglik(HK::Union{Matrix{T}, KernelHODLR{T}},
   return 0.5*nll
 end
 
-function scaleparm_mle(prms::AbstractVector, locs::AbstractVector, 
-                       dats::AbstractVector, opts::Maxlikopts)
-  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
-  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+function scaleparm_mle(prms::AbstractVector, data::Maxlikdata, opts::Maxlikopts)
+  nllK = KernelMatrix(data.pts_s, data.pts_s, prms, opts.kernfun)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, 
+                     plel=opts.apll, sorted=true)
   symmetricfactorize!(HK, plel=opts.fpll)
-  scal = dot(dats, HK\dats)/length(dats)
-  return scal
+  return dot(data.dat_s, HK\data.dat_s)/length(data.dat_s)
 end
 
-function nll_objective(prms::AbstractVector, grad::Vector, locs::AbstractVector,
-                       dats::AbstractVector, opts::Maxlikopts)
+function nll_objective(prms::AbstractVector, grad::Vector, 
+                       data::Maxlikdata, opts::Maxlikopts)
   opts.verb && @show prms
-  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
+  nllK = KernelMatrices.KernelMatrix(data.pts_s, data.pts_s, prms, opts.kernfun)
   tim1 = @elapsed begin
-  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, 
+                     plel=opts.apll, sorted=true)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
   opts.verb && println("Assembly+factorize took       $(round(tim1, digits=3)) seconds.")
-  tim2 = @elapsed nll     = negloglik(HK, dats)
+  tim2 = @elapsed nll     = negloglik(HK, data.dat_s)
   opts.verb && println("Negative log-lik took         $(round(tim2, digits=3)) seconds.")
   tim3 = @elapsed begin
   if length(grad) > 0
-    grad .= stoch_gradient(nllK, HK, dats, opts.dfuns, opts.saav, 
+    grad .= stoch_gradient(nllK, HK, data.dat_s, opts.dfuns, opts.saav, 
                            plel=opts.apll, shuffle=!(opts.saa_fix))
   end
   end
@@ -49,30 +49,30 @@ function nll_objective(prms::AbstractVector, grad::Vector, locs::AbstractVector,
   return nll
 end
 
-function nlpl_scale(prms::AbstractVector, locs::AbstractVector, 
-                    dats::AbstractVector, opts::Maxlikopts)
-  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
-  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+function nlpl_scale(prms::AbstractVector, data::Maxlikdata, opts::Maxlikopts)
+  nllK = KernelMatrices.KernelMatrix(data.pts_s, data.pts_s, prms, opts.kernfun)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, 
+                     plel=opts.apll, sorted=true)
   symmetricfactorize!(HK, plel=opts.fpll)
-  return dot(dats, HK\dats)/length(dats)
+  return dot(data.dat_s, HK\data.dat_s)/length(data.dat_s)
 end
 
 # Negative Log PROFILE likelihood
 function nlpl_objective(prms::AbstractVector, grad::Vector, 
-                        locs::AbstractVector,
-                       dats::AbstractVector, opts::Maxlikopts)
+                        data::Maxlikdata, opts::Maxlikopts)
   opts.verb && @show prms
-  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
+  nllK = KernelMatrices.KernelMatrix(data.pts_s, data.pts_s, prms, opts.kernfun)
   tim1 = @elapsed begin
-  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, 
+                     plel=opts.apll, sorted=true)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
   opts.verb && println("Assembly+factorize took       $(round(tim1, digits=3)) seconds.")
-  tim2 = @elapsed nll     = profile_negloglik(HK, dats)
+  tim2 = @elapsed nll     = profile_negloglik(HK, data.dat_s)
   opts.verb && println("Negative log-lik took         $(round(tim2, digits=3)) seconds.")
   tim3 = @elapsed begin
   if length(grad) > 0
-    grad .= stoch_profile_gradient(nllK, HK, dats, opts.dfuns, opts.saav, 
+    grad .= stoch_profile_gradient(nllK, HK, data.dat_s, opts.dfuns, opts.saav, 
                                    plel=opts.apll, shuffle=!(opts.saa_fix))
   end
   end
@@ -81,16 +81,16 @@ function nlpl_objective(prms::AbstractVector, grad::Vector,
   return nll
 end
 
-function nll_gradient(prms::AbstractVector, locs::AbstractVector, 
-                      dats::AbstractVector, opts::Maxlikopts)
-  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
+function nll_gradient(prms::AbstractVector, data::Maxlikdata, opts::Maxlikopts)
+  nllK = KernelMatrices.KernelMatrix(data.pts_s, data.pts_s, prms, opts.kernfun)
   tim1 = @elapsed begin
-  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, 
+                     plel=opts.apll, sorted=true)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
   opts.verb && println("Assembly+factorize took       $(round(tim1, digits=3)) seconds.")
   tim2 = @elapsed begin
-    grad = stoch_gradient(nllK, HK, dats, opts.dfuns, opts.saav, 
+    grad = stoch_gradient(nllK, HK, data.dat_s, opts.dfuns, opts.saav, 
                           plel=opts.apll, shuffle=!(opts.saa_fix))
   end
   opts.verb && println("Gradient took                 $(round(tim2, digits=3)) seconds.")
@@ -98,17 +98,17 @@ function nll_gradient(prms::AbstractVector, locs::AbstractVector,
   return grad
 end
 
-function nll_hessian(prms::AbstractVector, locs::AbstractVector, 
-                     dats::AbstractVector, opts::Maxlikopts,
-                     d2funs::Vector{Vector{Function}})
-  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
+function nll_hessian(prms::AbstractVector, data::Maxlikdata, opts::Maxlikopts)
+  isnothing(opts.d2funs) && throw(error("You need to supply second derivatives for this."))
+  nllK = KernelMatrices.KernelMatrix(data.pts_s, data.pts_s, prms, opts.kernfun)
   tim1 = @elapsed begin
-  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, 
+                     plel=opts.apll, sorted=true)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
   opts.verb && println("Assembly+factorize took      $(round(tim1, digits=3)) seconds.")
   tim2 = @elapsed begin
-  Hess = stoch_hessian(nllK,HK,dats,opts.dfuns,d2funs,opts.saav,plel=opts.apll,
+  Hess = stoch_hessian(nllK,HK,data.dat_s,opts.dfuns,opts.d2funs,opts.saav,plel=opts.apll,
                        verbose=false,shuffle=!(opts.saa_fix))
   end
   opts.verb && println("Hessian took                 $(round(tim2, digits=3)) seconds.")
@@ -117,17 +117,17 @@ function nll_hessian(prms::AbstractVector, locs::AbstractVector,
 end
 
 # Negative Log PROFILE likelihood Hessian
-function nlpl_hessian(prms::AbstractVector, locs::AbstractVector, 
-                      dats::AbstractVector, opts::Maxlikopts,
-                      d2funs::Vector{Vector{Function}})
-  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
+function nlpl_hessian(prms::AbstractVector, data::Maxlikdata, opts::Maxlikopts)
+  isnothing(opts.d2funs) && throw(error("You need to supply second derivatives for this."))
+  nllK = KernelMatrices.KernelMatrix(data.pts_s, data.pts_s, prms, opts.kernfun)
   tim1 = @elapsed begin
-  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, 
+                     plel=opts.apll, sorted=true)
   symmetricfactorize!(HK, plel=opts.fpll)
   end
   opts.verb && println("Assembly+factorize took      $(round(tim1, digits=3)) seconds.")
   tim2 = @elapsed begin
-  Hess = stoch_hessian(nllK,HK,dats,opts.dfuns,d2funs,opts.saav,plel=opts.apll,
+  Hess = stoch_hessian(nllK,HK,data.dat_s,opts.dfuns,opts.d2funs,opts.saav,plel=opts.apll,
                         verbose=false,shuffle=!(opts.saa_fix),profile=true)
   end
   opts.verb && println("Hessian took                 $(round(tim2, digits=3)) seconds.")
@@ -135,48 +135,46 @@ function nlpl_hessian(prms::AbstractVector, locs::AbstractVector,
   return Hess
 end
 
-function fisher_matrix(prms::AbstractVector, locs::AbstractVector, 
-                       dats::AbstractVector, opts::Maxlikopts)
-  nllK = KernelMatrices.KernelMatrix(locs, locs, prms, opts.kernfun)
-  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
+function fisher_matrix(prms::AbstractVector, data::Maxlikdata, opts::Maxlikopts)
+  nllK = KernelMatrices.KernelMatrix(data.pts_s, data.pts_s, prms, opts.kernfun)
+  HK   = KernelHODLR(nllK, 0.0, opts.mrnk, opts.lvl, nystrom=true, 
+                     plel=opts.apll, sorted=true)
   symmetricfactorize!(HK, plel=opts.fpll)
   DKs  = map(df -> DerivativeHODLR(nllK, df, HK, plel=opts.apll), opts.dfuns)
   fish = stoch_fisher(nllK, HK, DKs, opts.saav, plel=opts.apll, shuffle=!(opts.saa_fix))
   return fish
 end
 
-function gpsimulate(locs::AbstractVector, parms::Vector, opts::Maxlikopts; 
+function gpsimulate(kernel::Function, locs::AbstractVector, parms::Vector, 
+                    opts::Union{Nothing, Maxlikopts}=nothing; 
                     exact::Bool=false, kdtreesort::Bool=false)
+  !kdtreesort && @warn begin
+    "Not sortin data can adversely affect approximation quality..." maxlog=1
+  end
   # Get the locations, sorted if requested:
   lcss = kdtreesort ? NearestNeighbors.KDTree(locs).data : locs
   # Allocate for the output:
   out  = zeros(length(lcss))
   inp  = randn(length(lcss))
   # Create the KernelMatrix, and either get its exact Cholesky or use HODLR to simulate it:
-  covK = KernelMatrices.KernelMatrix(lcss, lcss, parms, opts.kernfun) 
+  covK = KernelMatrix(lcss, lcss, parms, kernel) 
   if exact
     cKf  = cholesky(Symmetric(full(covK))).U
     mul!(out, transpose(cKf), inp)
   else
+    opts == nothing && throw(error("Supply HODLR options for approximated simulations."))
     cHK  = HODLR.KernelHODLR(covK, 0.0, opts.mrnk, opts.lvl, 
                              nystrom=true, plel=opts.apll)
     HODLR.symmetricfactorize!(cHK, plel=opts.fpll)
     mul!(out, cHK.W, inp)
   end
-  return lcss, out
+  return maxlikdata(pts=lcss, data=out, sortmethod=:Nothing, warn=false)
 end
 
-# A very temporary kriging function.
-function nys_krige(newlocs, datalocs, data, parms, opts; exact=false)
-  # Kernel matrix for the data:
-  HK   = KernelHODLR(KernelMatrix(datalocs, datalocs, parms, opts.kernfun), 
-                     0.0, opts.mrnk, opts.lvl, nystrom=true, plel=opts.apll)
-  symmetricfactorize!(HK, plel=opts.fpll)
-  # Nystrom kernel for constructions below:
-  nyind = Int64.(round.(LinRange(1, length(datalocs), opts.mrnk)))
-  nyker = NystromKernel(opts.kernfun, datalocs[nyind], parms, true)
-  K0    = full(KernelMatrix(datalocs, newlocs, parms, opts.kernfun))
-  Kn    = full(KernelMatrix(newlocs, newlocs, parms, opts.kernfun))
-  return K0'*(HK\data), diag(Kn - K0'*(HK\K0))
+function gpsimulate(kernel::Function, parms::Vector, n::Int64, dim::Int64,
+                    boxsz::Float64, opts::Union{Nothing, Maxlikopts}=nothing;
+                    exact::Bool=false)
+  pts = [SVector{dim}(rand(dim).*boxsz) for _ in 1:n]
+  return gpsimulate(kernel, pts, parms, opts, exact=exact, kdtreesort=true)
 end
 

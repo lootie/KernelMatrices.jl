@@ -3,23 +3,23 @@
 # nystrom=false, the blocks are assembled with the ACA up to tolerance ep or
 # rank maxrank (if maxrank>0, otherwise no limit on the permitted rank). If
 # nystrom=true, assembles blocks using the Nystrom approximation.
-function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64, 
-                     lvl::HierLevel; nystrom::Bool=false, 
-                     plel::Bool=false)::KernelHODLR{T} where{T<:Number,N,A,Fn}
+function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64,
+                     lvl::HierLevel; nystrom::Bool=false, plel::Bool=false,
+                     sorted=false)::KernelHODLR{T} where{T<:Number,N,A,Fn}
   # Warn once about point ordering:
-  @warn "No default point sorting is done for you, and if your points are not \\
-  sorted properly than the approximation can be very poor. Expect UI changes \\
-  soon." maxlog=1
+  if !sorted
+    @warn "No default point sorting is done for you, and if your points are
+    not sorted properly than the approximation can be very poor." maxlog=1
+  end
 
   # Check for symmetry:
-  K.x1 == K.x2 || begin 
+  K.x1 == K.x2 || begin
     throw(error(("This function builds symmetric matrices. For non-symmetric matrices,
                  please use the recursive RKernelHODLR, which will only allow matvecs.")))
   end
 
   # Get the level, leaf indices, and non-leaf indices:
   level, leafinds, nonleafinds = HODLRindices(size(K)[1], lvl)
-  nwrk                         = nworkers()
 
   # If the Nystrom method was requested, prepare that:
   if nystrom
@@ -32,26 +32,27 @@ function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64,
     nyker = NystromKernel((x,y)->K.kernel(x,y,K.parms), K.x1[nyind], true)
   end
 
+  level == 0 && @warn "You are using a level-0 HODLR factorization, i.e. dense linear algebra.
+         Increase the HODLR level to compress the off-diagonal blocks."
+
   # Get the leaves in position:
-  leaves = mapf(x->Symmetric(full(submatrix(K, x), plel)), leafinds, nwrk, plel)
+  leaves = mapf(x->Symmetric(full(submatrix(K, x), plel)), leafinds, plel)
 
   # Get the rest of the decompositions of the non-leaf nodes in place:
-  U = Vector{Vector{Matrix{T}}}(undef, level)  
-  V = Vector{Vector{Matrix{T}}}(undef, level)  
+  U = Vector{Vector{Matrix{T}}}(undef, level)
+  V = Vector{Vector{Matrix{T}}}(undef, level)
   for j in eachindex(U)
     if nystrom
       nonleafinds[j]
-      tmpUV = mapf(x->nystrom_uvt(submatrix(K, x), nyker, plel), 
-                   nonleafinds[j], nwrk, plel)
+      tmpUV = mapf(x->nystrom_uvt(submatrix(K, x), nyker, plel), nonleafinds[j], plel)
     else
-      tmpUV = mapf(x->ACA(submatrix(K, x), ep, maxrank), 
-                   nonleafinds[j], nwrk, plel)
+      tmpUV = mapf(x->ACA(submatrix(K, x), ep, maxrank), nonleafinds[j], plel)
     end
     U[j] = map(x->x[1], tmpUV)
     V[j] = map(x->x[2], tmpUV)
   end
 
-  return KernelHODLR{T}(ep, level, maxrank, leafinds, 
+  return KernelHODLR{T}(ep, level, maxrank, leafinds,
                         nonleafinds, U, V, leaves, nothing, nystrom)
 
 end
@@ -62,11 +63,10 @@ end
 # actually require the blocks of the HODLR matrix, but passing it the HODLR
 # matrix is convenient to access the information about block boundaries and
 # stuff.
-function DerivativeHODLR(K::KernelMatrix{T,N,A,Fn}, dfun::Function, HK::KernelHODLR{T}; 
+function DerivativeHODLR(K::KernelMatrix{T,N,A,Fn}, dfun::Function, HK::KernelHODLR{T};
                          plel::Bool=false) where{T<:Number,N,A,Fn}
   # Check that the call is valid:
   HK.nys || error("This is only valid for Nystrom-block matrices.")
-  nwrk   = nworkers()
 
   # Get the landmark point vector, and global S and Sj:
   lndmk  = K.x1[Int64.(round.(LinRange(1, size(K)[1], HK.mrnk)))]
@@ -77,40 +77,40 @@ function DerivativeHODLR(K::KernelMatrix{T,N,A,Fn}, dfun::Function, HK::KernelHO
   dK     = KernelMatrix(K.x1, K.x2, K.parms, dfun)
 
   # Get the leaves in position:
-  leaves = mapf(x->Symmetric(full(submatrix(dK, x), plel)), HK.leafindices, nwrk, plel)
+  leaves = mapf(x->Symmetric(full(submatrix(dK, x), plel)), HK.leafindices, plel)
 
   # Get the non-leaves in place:
   B      = Vector{Vector{DerivativeBlock{T}}}(undef, HK.lvl)
   for j in eachindex(B)
-    B[j] = mapf(x->DBlock(submatrix(K, x), dfun, lndmk, plel), 
-                HK.nonleafindices[j], nwrk, plel)
+    B[j] = mapf(x->DBlock(submatrix(K, x), dfun, lndmk, plel),
+                HK.nonleafindices[j], plel)
   end
 
-  return DerivativeHODLR(HK.ep, HK.lvl, HK.leafindices, 
+  return DerivativeHODLR(HK.ep, HK.lvl, HK.leafindices,
                          HK.nonleafindices, leaves, B, S, Sj)
 end
 
 
 
 # Construct the leaves of the EXACT second derivative of a HODLR matrix.
-function SecondDerivativeLeaves(K::KernelMatrix{T,N,A,Fn}, djk::Function, 
-                                lfi::AbstractVector, 
+function SecondDerivativeLeaves(K::KernelMatrix{T,N,A,Fn}, djk::Function,
+                                lfi::AbstractVector,
                                 plel::Bool=false) where{T<:Number,N,A,Fn}
   d2K    = KernelMatrix(K.x1, K.x2, K.parms, djk)
-  return mapf(x->Symmetric(full(submatrix(d2K, x), plel)), lfi, nworkers(), plel)
+  return mapf(x->Symmetric(full(submatrix(d2K, x), plel)), lfi, plel)
 end
 
 
 
 # Construct the off-diagonal blocks of the EXACT second derivative of a HODLR matrix.
-function SecondDerivativeBlocks(K::KernelMatrix{T,N,A,Fn}, djk::Function, 
+function SecondDerivativeBlocks(K::KernelMatrix{T,N,A,Fn}, djk::Function,
                                 nlfi::AbstractVector,
                                 mrnk::Int64, plel::Bool=false) where{T<:Number,N,A,Fn}
   d2K    = KernelMatrix(K.x1, K.x2, K.parms, djk)
   lndmk  = K.x1[Int64.(round.(LinRange(1, size(K)[1], mrnk)))]
-  B      = map(nlf -> mapf(x->SBlock(submatrix(d2K, x), djk, lndmk), 
-                           nlf, nworkers(), plel), nlfi)
-  return B
+  B      = map(nlf -> mapf(x->SBlock(submatrix(d2K, x), djk, lndmk),
+                           nlf, plel), nlfi)
+  return Vector{Vector{SecondDerivativeBlock{T}}}(B)
 end
 
 # A very simple recursive HODLR matrix structure. At the moment, it only allows
@@ -124,7 +124,7 @@ function RKernelHODLR(K::KernelMatrix{T,N,A,Fn}, tol::Float64, maxrank::Int64=0,
                       lvl::HierLevel=LogLevel(7)) where{T,N,A,Fn}
 
   # If the level is LogLevel, call the function again with that FixedLevel:
-  if typeof(lvl) <: LogLevel 
+  if typeof(lvl) <: LogLevel
     lv = FixedLevel(Int64(floor(log2(minimum(size(K))) - lvl.lv)))
     return RKernelHODLR(K, tol, maxrank, lv)
   end
@@ -154,10 +154,42 @@ function RKernelHODLR(K::KernelMatrix{T,N,A,Fn}, tol::Float64, maxrank::Int64=0,
 end
 
 # A wrapper-type function with kwargs to make building this options struct easier.
-function maxlikopts(;kernfun, level, rank, saavecs=Vector{Vector}(), 
-                    fix_saa=true, dfuns=Function[], par_assem=false, 
+function maxlikopts(;kernfun, level, rank, saavecs=Vector{Vector}(),
+                    fix_saa=true, dfuns=Function[], d2funs=nothing, par_assem=false,
                     par_factor=false, verbose=false)
-  return Maxlikopts(kernfun, dfuns, level, rank, saavecs, par_assem,
-                    par_factor, verbose, fix_saa)
+  return Maxlikopts(kernfun, dfuns, d2funs, level, rank, saavecs,
+                    par_assem, par_factor, verbose, fix_saa)
 end
 
+function maxlikdata(;pts, data, sortmethod=:KDTree, warn=true)
+  if sortmethod == :Nothing
+    if warn
+      @warn "Not sorting data can adversely affect approximation quality..." maxlog=1
+    end
+    return Maxlikdata(pts, data)
+  elseif sortmethod == :KDTree
+    pts_dim    = length(first(pts))
+    pts_static = [SVector{pts_dim}(x...) for x in pts]
+    pts_s = NearestNeighbors.KDTree(pts_static).data
+    return Maxlikdata(pts_s, KernelMatrices.data_reorder(data, pts_static, pts_s))
+  #=
+  # TODO (cg 2019/12/13 19:29): I could add a Hilbert sort here using
+  # geometrical predicates. But I think that code wants some domain restrictions
+  # onto [1,2]^d, which gets back to a more serious question from PB about
+  # better point enumeration that is more sensitive to rectangular domains.
+  elseif sortmethod == :Hilbert
+    pts_dim    = length(first(pts))
+    in(pts_dim, [2,3]) || throw(error("Hilbert sort only available for d=2 or d=3."))
+    pts_pt = [Point(x...) for x in pts]
+    hilbertsort!(pts_pt)
+    if pts_dim == 2
+      pts_s  = [SVector{2}(getx(x), gety(x)) for x in pts_pt]
+    else
+      pts_s  = [SVector{2}(getx(x), gety(x), getz(x)) for x in pts_pt]
+    end
+    return Maxlikdata([SVector{pts_dim}
+  =#
+  else
+    throw(error("The options are :Nothing and :KDTree"))
+  end
+end

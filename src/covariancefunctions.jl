@@ -75,7 +75,7 @@ end
 ##
 
 function give_eps(x::Number)
-  cbrt(eps(Float64)) * max(1.0, abs(x)) 
+  cbrt(eps(Float64)) * max(1.0, abs(x))
 end
 
 function gamma_dx(x::Number)
@@ -92,7 +92,7 @@ function besselk_dx(nu::Number, x::Number)
   -0.5*(besselk(nu+1.0, x) + besselk(nu-1.0, x))
 end
 
-function besseli_dnu(nu::Float64, x::Float64; maxit::Int64 = 1_000_000, 
+function besseli_dnu(nu::Float64, x::Float64; maxit::Int64 = 1_000_000,
                      rtol::Float64 = 1.0e-12)::Float64
   (isinteger(nu) && isless(nu, 0)) && error(DomainError(nu, "Don't call with negative ints."))
   sum = 0.0
@@ -109,7 +109,7 @@ function besselk_dnu(nu::Float64, x::Float64)
   isinteger(rnu)   && return besselk_dnu(Int64(rnu), x)
   isless(100.0, x) && return 0.0
   tmp1 = -besseli_dnu(-nu, x)                  # If the besseli has exploded, use finite diff,
-  (abs(tmp1) > 1.0e5 || isnan(tmp1)) && begin  # as subtracting two numbers that have order of 
+  (abs(tmp1) > 1.0e5 || isnan(tmp1)) && begin  # as subtracting two numbers that have order of
     ep = give_eps(nu)                          # magnitude 10^18 or whatever will cause failures.
     return (besselk(nu+ep, x)-besselk(nu-ep, x))/(2.0*ep)
   end
@@ -225,6 +225,7 @@ function mtn_cor_dnu(nu::Number, x::Number)
 end
 
 function mtn_cor_dx_dx(nu::Number, x::Number)
+  isapprox(x, 0.0, atol=1.0e-8) && return 0.0
   ird  = mtn_p1_dx_dx(nu,x)*mtn_p2(nu,x) + mtn_p1_dx(nu,x)*mtn_p2_dx(nu,x)
   ird += mtn_p1_dx(nu,x)*mtn_p2_dx(nu,x) + mtn_p1(nu,x)*mtn_p2_dx_dx(nu,x)
   out  = mtn_p3(nu)*ird
@@ -232,6 +233,7 @@ function mtn_cor_dx_dx(nu::Number, x::Number)
 end
 
 function mtn_cor_dnu_dx(nu::Number, x::Number)
+  isapprox(x, 0.0, atol=1.0e-8) && return 0.0
   out  = mtn_p3_dnu(nu)*(mtn_p1_dx(nu,x)*mtn_p2(nu,x) + mtn_p1(nu,x)*mtn_p2_dx(nu,x))
   ird  = mtn_p1_dnu_dx(nu,x)*mtn_p2(nu,x) + mtn_p1_dx(nu,x)*mtn_p2_dnu(nu,x)
   ird += mtn_p1_dnu(nu,x)*mtn_p2_dx(nu,x) + mtn_p1(nu,x)*mtn_p2_dnu_dx(nu,x)
@@ -240,6 +242,7 @@ function mtn_cor_dnu_dx(nu::Number, x::Number)
 end
 
 function mtn_cor_dnu_dnu(nu::Number, x::Number)
+  isapprox(x, 0.0, atol=1.0e-8) && return 0.0
   out  = mtn_p1_dnu_dnu(nu,x)*mtn_p2(nu,x)*mtn_p3(nu)
   out += mtn_p1_dnu(nu,x)*mtn_p2_dnu(nu,x)*mtn_p3(nu)
   out += mtn_p1_dnu(nu,x)*mtn_p2(nu,x)*mtn_p3_dnu(nu)
@@ -551,7 +554,7 @@ function hmt_p3_dt1_dt1(t1::Number, x::Number)
   a1      = besselk_dx(nu, 2.0*sqrt(nu)*x/t1)
   da1_dt1 = besselk_dx_dx(nu, 2.0*sqrt(nu)*x/t1) * (-2.0*sqrt(nu)*x/abs2(t1))
   a2      = (-2.0*sqrt(nu)*x/abs2(t1))
-  da2_dt1 = 4.0*sqrt(nu)*x/(t1^3) 
+  da2_dt1 = 4.0*sqrt(nu)*x/(t1^3)
   return a1*da2_dt1 + a2*da1_dt1
 end
 
@@ -700,7 +703,7 @@ function sm1_kernfun_d2(x1, x2, parms)
     a1    = (nx12*t1/(2.0*sqrt(nu)))^nu
     a1_d2 = (nu*(nx12*t1/(2.0*sqrt(nu)))^(nu-1.0))*(nx12/2.0*sqrt(nu))
     a2    = besselk(nu, 2.0*sqrt(nu)*nx12/t1)
-    a2_d2 = -besselk_dx(nu, 2.0*sqrt(nu)*nx12/t1)*2.0*sqrt(nu)*nx12/abs2(t1) 
+    a2_d2 = -besselk_dx(nu, 2.0*sqrt(nu)*nx12/t1)*2.0*sqrt(nu)*nx12/abs2(t1)
     out = t0*(a1*a2_d2 + a1_d2*a2)
   end
   return out
@@ -715,7 +718,7 @@ function sm1_kernfun_d1_d2(x1, x2, parms)
     a1    = (nx12*t1/(2.0*sqrt(nu)))^nu
     a1_d2 = (nu*(nx12*t1/(2.0*sqrt(nu)))^(nu-1.0))*(nx12/2.0*sqrt(nu))
     a2    = besselk(nu, 2.0*sqrt(nu)*nx12/t1)
-    a2_d2 = -besselk_dx(nu, 2.0*sqrt(nu)*nx12/t1)*2.0*sqrt(nu)*nx12/abs2(t1) 
+    a2_d2 = -besselk_dx(nu, 2.0*sqrt(nu)*nx12/t1)*2.0*sqrt(nu)*nx12/abs2(t1)
     out = (a1*a2_d2 + a1_d2*a2)
   end
   return out
@@ -731,7 +734,7 @@ function sm1_kernfun_d2_d2(x1, x2, parms)
     a1_d2    = (nu*(nx12*t1/(2.0*sqrt(nu)))^(nu-1.0))*(nx12/2.0*sqrt(nu))
     a1_d2_d2 = (nu*(nu-1.0)*(nx12*t1/(2.0*sqrt(nu)))^(nu-2.0))*abs2(nx12/(2.0*sqrt(nu)))
     a2       = besselk(nu, 2.0*sqrt(nu)*nx12/t1)
-    a2_d2    = -besselk_dx(nu, 2.0*sqrt(nu)*nx12/t1)*2.0*sqrt(nu)*nx12/abs2(t1) 
+    a2_d2    = -besselk_dx(nu, 2.0*sqrt(nu)*nx12/t1)*2.0*sqrt(nu)*nx12/abs2(t1)
     a2_d2_d2 = besselk_dx_dx(nu, 2.0*sqrt(nu)*nx12/t1)*abs2(2.0*sqrt(nu)*nx12/abs2(t1))
     a2_d2_d2+= 2.0*besselk_dx(nu, 2.0*sqrt(nu)*nx12/t1)*2.0*sqrt(nu)*nx12/(t1^3)
     out = t0*(a1*a2_d2_d2 + 2.0*a1_d2*a2_d2 + a1_d2_d2*a2)
@@ -767,7 +770,7 @@ function ps1_kernfun_d2(x1, x2, parms)
     a1    = (nx12*t1/(2.0*sqrt(nu)))^nu
     a1_d2 = (nu*(nx12*t1/(2.0*sqrt(nu)))^(nu-1.0))*(nx12/2.0*sqrt(nu))
     a2    = besselk(nu, 2.0*sqrt(nu)*nx12/t1)
-    a2_d2 = -besselk_dx(nu, 2.0*sqrt(nu)*nx12/t1)*2.0*sqrt(nu)*nx12/abs2(t1) 
+    a2_d2 = -besselk_dx(nu, 2.0*sqrt(nu)*nx12/t1)*2.0*sqrt(nu)*nx12/abs2(t1)
     out = t0*(a1*a2_d2 + a1_d2*a2)
   end
   return out
@@ -783,12 +786,10 @@ function ps1_kernfun_d2_d2(x1, x2, parms)
     a1_d2    = (nu*(nx12*t1/(2.0*sqrt(nu)))^(nu-1.0))*(nx12/2.0*sqrt(nu))
     a1_d2_d2 = (nu*(nu-1.0)*(nx12*t1/(2.0*sqrt(nu)))^(nu-2.0))*abs2(nx12/(2.0*sqrt(nu)))
     a2       = besselk(nu, 2.0*sqrt(nu)*nx12/t1)
-    a2_d2    = -besselk_dx(nu, 2.0*sqrt(nu)*nx12/t1)*2.0*sqrt(nu)*nx12/abs2(t1) 
+    a2_d2    = -besselk_dx(nu, 2.0*sqrt(nu)*nx12/t1)*2.0*sqrt(nu)*nx12/abs2(t1)
     a2_d2_d2 = besselk_dx_dx(nu, 2.0*sqrt(nu)*nx12/t1)*abs2(2.0*sqrt(nu)*nx12/abs2(t1))
     a2_d2_d2+= 2.0*besselk_dx(nu, 2.0*sqrt(nu)*nx12/t1)*2.0*sqrt(nu)*nx12/(t1^3)
     out = t0*(a1*a2_d2_d2 + 2.0*a1_d2*a2_d2 + a1_d2_d2*a2)
   end
   return out
 end
-
-

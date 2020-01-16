@@ -1,7 +1,8 @@
 
-# This is the adaptive cross-approximation (ACA), I think originally proposed by Bebendorf.
-# This implementation is an attempt to be as clean and readable as possible, but has admittedly
-# grown up a little bit. I probably should split some of these things into helper functions.
+# This is the adaptive cross-approximation (ACA), I think originally proposed by
+# Bebendorf.  This implementation is an attempt to be as clean and readable as
+# possible, but has admittedly grown up a little bit. I probably should split
+# some of these things into helper functions.
 function ACA(M::Union{Matrix{T}, KernelMatrix{T,N,A,Fn}}, rtol::Float64, 
              maxrank::Int64=0)::NTuple{2, Matrix{T}} where{T<:Number,N,A,Fn}
 
@@ -26,46 +27,35 @@ function ACA(M::Union{Matrix{T}, KernelMatrix{T,N,A,Fn}}, rtol::Float64,
   urow      = Base.BitSet(strt)
 
   # Get the first column in place:
-  mv, mi = restrictedmaxabs(tmprow, ucol)
-  @simd for j in eachindex(tmprow)
-     @inbounds tmprow[j] /= mv
-   end
-  tmpcol = M[:,mi]
-  U[1]   = tmpcol
-  V[1]   = tmprow
-  znorm2 = sum(abs2,tmprow)*sum(abs2,tmpcol)
+  mv, mi  = KernelMatrices.restrictedmaxabs(tmprow, ucol)
+  tmprow./= mv
+  tmpcol  = M[:,mi]
+  U[1]    = tmpcol
+  V[1]    = tmprow
+  znorm2  = sum(abs2,tmprow)*sum(abs2,tmpcol)
   push!(ucol, mi)
-  frnk   = 1
+  frnk = 1
 
   # Now loop until we have reached the desired tolerance. 
   while norm(tmprow)*norm(tmpcol) > rtol*sqrt(znorm2) && frnk < maxsz
     # Find the next row index:
-    mv, mi = restrictedmaxabs(tmpcol, urow)
+    mv, mi = KernelMatrices.restrictedmaxabs(tmpcol, urow)
     push!(urow, mi)
     # Get the next row:
     tmprow = M[mi,:]
     for j in 1:frnk
-      @inbounds Ujmi = U[j][mi]
-      @inbounds Vj   = V[j]
-      @simd for k in eachindex(tmprow)
-         @inbounds tmprow[k] -= Ujmi*Vj[k]
-      end
+      @inbounds tmprow .-= U[j][mi]*V[j]
     end
-    # Find the next column index, use that value to normalize the row, breaking if the value is 0:
-    mv, mi = restrictedmaxabs(tmprow, ucol)
-    mv    == 0.0 && break
+    # Find the next column index, use that value to normalize the row, breaking
+    # if the value is 0:
+    mv, mi = KernelMatrices.restrictedmaxabs(tmprow, ucol)
+    mv == 0.0 && break
     push!(ucol, mi)
-    @simd for j in eachindex(tmprow)
-       @inbounds tmprow[j] /= mv
-    end
+    tmprow ./= mv
     # Get the next column:
     tmpcol = M[:,mi]
     for j in 1:frnk
-      @inbounds Vjmi = V[j][mi]
-      @inbounds Uj   = U[j]
-      @simd for k in eachindex(tmpcol)
-         @inbounds tmpcol[k] -= Vjmi*Uj[k]
-      end
+      @inbounds tmpcol .-= V[j][mi]*U[j]
     end
     # Update the norm computation:
     for j in 1:frnk
@@ -81,12 +71,12 @@ function ACA(M::Union{Matrix{T}, KernelMatrix{T,N,A,Fn}}, rtol::Float64,
 
   # Resize if necessary:
   if frnk < length(U)
-    isassigned(U, frnk) && !isassigned(U, frnk+1) || error("Something went wrong with U vector.")
+    isassigned(U, frnk) && !isassigned(U, frnk+1) || throw(error("ACA array failure."))
     resize!(U, frnk)
     resize!(V, frnk)
   end
 
-  return vv_to_m(U), vv_to_m(V)
+  return hcat(U...), hcat(V...)
 
 end
 
@@ -118,4 +108,6 @@ function SVD_ACA(U::Matrix{T}, V::Matrix{T})::Tuple{Matrix{T}, Vector{T}, Matrix
   Uo       = UQ*DU
   return Uo, DS, DV
 end
+
+
 

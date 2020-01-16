@@ -17,15 +17,12 @@ opts    = maxlikopts(kernfun=kernfun, dfuns=dfuns, level=LogLevel(8),
                      rank=72, saavecs=HODLR.givesaa(35, nsz, seed=1618), verbose=true)
 
 # simulate data points (or read in your not fake data points):
-pts      = map(x->SVector{2, Float64}(rand(2).*100.0), 1:nsz)
-trup     = [1.5, 5.0]
-simdd    = HODLR.gpsimulate(pts, trup, opts, exact=true, kdtreesort=true)
-loc_s    = simdd[1]
-dat_s    = simdd[2]
+truprms  = [1.5, 5.0]
+data     = HODLR.gpsimulate(kernfun, truprms, nsz, 2, 100.0, exact=true)
 
 # Estimate the kernel parameters using the above specified options:
 println("Optimizing:")
-@time mle, fish = HODLR.fisherscore([1.0, 3.0], loc_s, dat_s, opts,
+@time mle, fish = HODLR.fisherscore([1.0, 3.0], data, opts,
                              vrb=true, g_tol=1.0e-3, s_tol=1.0e-5)
 mle_er   = sqrt.(diag(inv(fish))).*1.96
 println()
@@ -35,7 +32,7 @@ println("Results:")
 println()
 println("\t Truth:    Estimated (95% ±):")
 println()
-for j in eachindex(trup)
-  println("\t $(round(trup[j], digits=4))       $(round(mle[j], digits=4)) ($(round(mle_er[j], digits=4)))")
+for j in eachindex(truprms)
+  println("\t $(round(truprms[j], digits=4))       $(round(mle[j], digits=4)) ($(round(mle_er[j], digits=4)))")
 end
 println()

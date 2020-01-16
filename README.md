@@ -1,28 +1,27 @@
 
 # KernelMatrices.jl
 
-This software suite is a companion to the manuscript [Scalable Gaussian Process Computations using
-Hierarchical Matrices](https://arxiv.org/abs/1808.03215). It is for working with kernel matrices
-where individual elements can be computed efficiently, so that one can write
-```julia
-A[i,j] = F(x[i], y[j], v),
-```
-Where `x` and `y` are any kind of structure that allows getindex-style access (like a vector) and
-`v` is a vector of parameters.  I have overloaded most (if not all) of the relevant Base operations
-for the KernelMatrix struct, so that once you create the lightweight KernelMatrix struct, call it
-`K`, with 
-```julia
-julia> K = KernelMatrices.KernelMatrix(xpts, ypts, kernel_parameters, kernel_function)
-```
-you can access the (i,j)-th element of that matrix with `K[i,j]`, the j-th column or row with
-`K[:,j]` and `K[j,:]`, get the full matrix with `KernelMatrices.full(K)`. 
+This software suite is a companion to the manuscript [Scalable Gaussian Process
+Computations using Hierarchical Matrices](https://arxiv.org/abs/1808.03215). It
+is for working with kernel matrices where individual elements can be computed
+efficiently, so that one can write ```julia A[i,j] = F(x[i], y[j], v), ``` Where
+`x` and `y` are any kind of structure that allows getindex-style access (like a
+vector) and `v` is a vector of parameters.  I have overloaded most (if not all)
+of the relevant Base operations for the KernelMatrix struct, so that once you
+create the lightweight KernelMatrix struct, call it `K`, with ```julia julia> K
+= KernelMatrices.KernelMatrix(xpts, ypts, kernel_parameters, kernel_function)
+``` you can access the (i,j)-th element of that matrix with `K[i,j]`, the j-th
+column or row with `K[:,j]` and `K[j,:]`, get the full matrix with
+`KernelMatrices.full(K)`. 
 
-To accelerate linear algebra, this software package implements the Hierarchically Off-Diagonal
-Low-Rank (HODLR) matrix structure originally introduced in Ambikasaran and Darve (2013), which can
-be used to achieve quasilinear complexity in matvecs, linear solves, and log-determinants.
+To accelerate linear algebra, this software package implements the
+Hierarchically Off-Diagonal Low-Rank (HODLR) matrix structure originally
+introduced in Ambikasaran and Darve (2013), which can be used to achieve
+quasilinear complexity in matvecs, linear solves, and log-determinants.
 
-For a brief whirlwind tour, here is a heavily commented example that builds these objects. In the
-`./examples/` directory, you will find similar files that you can run and mess with.
+For a brief whirlwind tour, here is a heavily commented example that builds
+these objects. In the `./examples/` directory, you will find similar files that
+you can run and mess with.
 ```julia
 using LinearAlgebra, KernelMatrices, KernelMatrices.HODLR, StaticArrays, NearestNeighbors
 
@@ -56,11 +55,11 @@ kprm = SVector{2, Float64}(ones(2))
 # not to use them, because they will be slow and kind of defeat the purpose.
 K    = KernelMatrices.KernelMatrix(locs, locs, kprm, kernelfunction)
 ```
-
-If you want to make a HODLR matrix out of K, you have two low-rank approximation methods for the
-off-diagonal blocks: you can use the adaptive cross approximation (ACA) of Bebendorf (2000) and
-Rjasanow (2002), or you can use the Nystrom approximation of Williams and Seeger (2001). I will show
-you the syntax for both here, although they are very similar.
+If you want to make a HODLR matrix out of K, you have two low-rank approximation
+methods for the off-diagonal blocks: you can use the adaptive cross
+approximation (ACA) of Bebendorf (2000) and Rjasanow (2002), or you can use the
+Nystrom approximation of Williams and Seeger (2001). I will show you the syntax
+for both here, although they are very similar.
 
 ```julia
 # For the ACA, you need to choose:
@@ -82,31 +81,35 @@ HK_a = HODLR.KernelHODLR(K, tol, rnk, lvl, nystrom=false, plel=pll)
 n_rk = 2 # choose a valid fixed rank for off-diagonal blocks
 HK_n = HODLR.KernelHODLR(K, tol, n_rk, lvl, nystrom=true, plel=pll)
 ```
+You can now do `HK_n*vec` and `HK_a*vec` in quasilinear complexity, assuming in
+the case of `HK_a` that the rank of the off-diagonal blocks is O(log n) or less.
+If you want to do the solves and logdets in that complexity as well, you will
+need to compute the symmetric factorization.
 
-Congrats! You can now do `HK_n*vec` and `HK_a*vec` in quasilinear complexity, assuming in the case
-of `HK_a` that the rank of the off-diagonal blocks is O(log n) or less. If you want to do the
-solves and logdets in that complexity as well, you will need to compute the symmetric factorization.
-
-Assuming that the output HODLR matrix is positive definite, you can factorize the matrix easily.
-This function modifies the struct internally, so this is all you need to do:
-
+Assuming that the output HODLR matrix is positive definite, you can factorize
+the matrix easily.  This function modifies the struct internally, so this is all
+you need to do:
 ```julia
 HODLR.symmetricfactorize!(HK_n, plel=pll)
 ```
-Now you can compute your linear solves with `HK_n\vec` and logdets with `logdet(HK_n)`.
+Now you can compute your linear solves with `HK_n\vec` and logdets with
+`logdet(HK_n)`.
 
-As a reminder, if you want to do things in on-node parallel, start julia with multiple processes
-with `julia -p $k` for k many processes. If you just start the REPL or run something with `julia
-...`, then you will NOT really benefit from using the parallel flag.
+As a reminder, if you want to do things in on-node parallel, start julia with
+multiple processes with `julia -p $k` for k many processes. If you just start
+the REPL or run something with `julia ...`, then you will NOT really benefit
+from using the parallel flag.
 
-Finally, this software packages provides more specialized functionally for Gaussian process
-computing. See the paper for details on this, but an approximated Gaussian log-likelihood with a
-stochastic gradient, Hessian, and expected Fisher information matrix is also provided. All of these
-things can be computed in quasilinear time, so that many optimization options are available at good
-complexity.
+Finally, this software packages provides more specialized functionally for
+Gaussian process computing. See the paper for details on this, but an
+approximated Gaussian log-likelihood with a stochastic gradient, Hessian, and
+expected Fisher information matrix is also provided. All of these things can be
+computed in quasilinear time, so that many optimization options are available at
+good complexity.
 
-For details on this, I will send readers to the `./examples/fitting/` directory, which has many
-complete and heavily commented scripts demonstrating how to do that.
+For details on this, I will send readers to the `./examples/fitting/` directory,
+which has many complete and heavily commented scripts demonstrating how to do
+that.
 
 
 # Usage
@@ -114,36 +117,30 @@ This package is unregistered, so please install with
 ```julia
 Pkg> add git://bitbucket.org/cgeoga/KernelMatrices.jl.git #v0.6.0
 ```
-The figures and results of the paper were generated with version `0.3`, so if you want to run that
-exact code again please add that version instead. If you want to re-compute results from the paper
-and then potentially re-create the figures, please run the files from the directory they are located
-in. All of them use relative paths for output storage.
+The figures and results of the paper were generated with version `0.3`, so if
+you want to run that exact code again please add that version instead. If you
+want to re-compute results from the paper and then potentially re-create the
+figures, please run the files from the directory they are located in. All of
+them use relative paths for output storage.
 
-The code is organized into a module `KernelMatrices` and a sub-module `KernelMatrices.HODLR`, which
-you can access with
+The code is organized into a module `KernelMatrices` and a sub-module
+`KernelMatrices.HODLR`, which you can access with
 ```julia
 julia> using KernelMatrices, KernelMatrices.HODLR
 ```
-**For both modules, nothing is exported to the namespace, so you will need to call every function
-with `KernelMatrices.foo()`, or `HODLR.foo()`, or `KernelMatrices.HODLR.foo()` if you do not bring
-the module `HODLR` into the namespace with `using KernelMatrices.HODLR`.**
+**For both modules, not everything is exported to the namespace, so you will
+need to call some functions with `KernelMatrices.foo()`, or `HODLR.foo()`, or
+`KernelMatrices.HODLR.foo()` if you do not bring the module `HODLR` into the
+namespace with `using KernelMatrices.HODLR`. Please see the example files for
+useful templates.**
 
-**Please see the example files, which give complete examples of performing optimization with first
-and second derivatives**.
+**Please see the example files, which give complete examples of performing
+optimization with first and second derivatives**.
 
 
 # Changes to expect in the next release
 
-1. **Options to minimize memory demands.** At the moment, certain parts of the source
-   code---especially computing the Hessian---are not as tight with RAM as they could be. As an
-   example, to compute any entry in the Hessian, one needs two derivative matrices and some extra
-   stuff. Currently, the code computes all of the derivative matrices and stores all of them for the
-   duration of the computation of the Hessian matrix. If you only have two or three parameters in
-   your model like we do in our examples, there isn't really much of a cost to doing this. But if
-   you had a ten parameter model, say, the current code would probably not be acceptable. So I
-   intend to add some extra options to modify that behavior (at the sacrifice of speed).
-
-1. **Other small performance improvements.** In general, the code tries to be both fast and
+1. **Small performance improvements.** In general, the code tries to be both fast and
    pedagogical. At some point, I am going to think more exclusively about being fast. Maybe I will
    make a separate branch to preserve the pedagogical codebase.
 
@@ -171,31 +168,19 @@ and second derivatives**.
    HSS just like I already made a HODLR sub-module. 
 
 
-# A note from the author
+# Authors
 
-As mentioned above, I have made a serious effort to make the source code readable. Admittedly, some
-of it---especially for the second derivatives of the kernel matrices---is challenging to parse. But
-especially for the higher-level functions, like `HODLR.symmetricfactorize!`, I have made an effort
-to name functions and their arguments in a helpful way, so I encourage any curious users to look at
-the source directory.
-
-If you would like to make contributions to the software, please feel free to reach out or submit
-pull requests! It is my sincere hope that this software is actually useful to people, so I am
-interested to hear about your experience using with this software.
-
-More generally, please feel free to contact me at `cgeoga@anl.gov` with any comments, questions, or
-concerns. I cannot promise that I will be in a position to help debug your code or implement the
-feature you want, but I plan on being as supportive as possible of people who want to use this
-software, so it is worth trying me.
+* Chris Geoga (cgeoga $at anl $dot gov)
+* Paul Beckman (pbeckman $at anl $dot gov)
 
 
 # Citation
 
-If you use this software suite, please cite [this paper](https://arxiv.org/abs/1808.03215).
+If you use this software suite, please cite [this paper](https://doi.org/10.1080/10618600.2019.1652616).
 
 
 # License
 
-This software is distributed under the GNU GPL v2 license only. I am not interested in
-redistributing it under any other license.
+This software is distributed under the GNU GPL v2 license only. We are not
+interested in redistributing it under any other license.
 

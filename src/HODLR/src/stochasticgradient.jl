@@ -1,5 +1,7 @@
 
-function HODLR_trace_apply(HK::KernelHODLR{T}, HKj::DerivativeHODLR{T}, vec::Vector{T})::T where{T<:Number}
+function HODLR_trace_apply(HK::KernelHODLR{T}, HKj::DerivativeHODLR{T}, 
+                           vec::Vector{T})::T where{T<:Number}
+  size(HK)[2] == length(vec) || throw(error("Incorrect SAA Vector size."))
   tmp1 = Array{T}(undef, length(vec))
   tmp2 = Array{T}(undef, length(vec))
   ldiv!(tmp1, adjoint(HK.W), vec)
@@ -9,8 +11,9 @@ end
 
 # Since we are computing the exact HODLR derivative, there are actually not too many tweakable
 # options we have to think about. This is a simple call.
-function HODLR_grad_term(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dfn::Function, dat::Vector{T}, 
-                         vecs::Vector{Vector{T}}; plel::Bool=false, verbose::Bool=false) where{T<:Number,N,A,Fn}
+function HODLR_grad_term(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dfn::Function, 
+                         dat::Vector{T}, vecs::Vector{Vector{T}}; plel::Bool=false, 
+                         verbose::Bool=false) where{T<:Number,N,A,Fn}
   # Get the EXACT HODLR derivative:
   verbose && println("Assembling derivative matrix...")
   HKj   = DerivativeHODLR(K, dfn, HK, plel=plel)
@@ -24,8 +27,9 @@ end
 
 # You need to supply a vector of derivative functions here, which is maybe a little wacky.
 # But otherwise, pretty straightforward function.
-function stoch_gradient(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dat::Vector{T}, dfuns::Vector{Function}, 
-                        vecs::Vector{Vector{T}}; plel::Bool=false, verbose::Bool=false, 
+function stoch_gradient(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dat::Vector{T}, 
+                        dfuns::Vector{Function}, vecs::Vector{Vector{T}}; 
+                        plel::Bool=false, verbose::Bool=false, 
                         shuffle::Bool=false)::Vector{T} where{T<:Number,N,A,Fn}
   # Test stuff:
   HK.U == nothing                  || error("The matrix needs to be factorized for this to work.")
@@ -33,13 +37,17 @@ function stoch_gradient(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dat::Vect
   # Shuffle the SAA vectors if requested:
   shuffle && saa_shuffle!(opts.saav)
   # Loop over the functions:
-  out = map(df -> HODLR_grad_term(K, HK, df, dat, vecs, plel=plel, verbose=verbose), dfuns)
+  out = zeros(length(dfuns))
+  for (j, df) in enumerate(dfuns)
+    out[j] = HODLR_grad_term(K, HK, df, dat, vecs, plel=plel, verbose=verbose)
+  end
   return out
 end
 
 # This is the gradient term for the PROFILE log likelihood.
-function HODLR_p_grad_term(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dfn::Function, dat::Vector{T},
-                           vecs::Vector{Vector{T}}; plel::Bool=false, verbose::Bool=false, 
+function HODLR_p_grad_term(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, 
+                           dfn::Function, dat::Vector{T}, vecs::Vector{Vector{T}}; 
+                           plel::Bool=false, verbose::Bool=false, 
                            seed::Int64=0) where{T<:Number,N,A,Fn}
   # Get the EXACT HODLR derivative:
   verbose && println("Assembling derivative matrix...")
@@ -57,9 +65,10 @@ end
 
 # You need to supply a vector of derivative functions here, which is maybe a little wacky.
 # But otherwise, pretty straightforward function.
-function stoch_profile_gradient(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, dat::Vector{T},
-                                dfuns::Vector{Function}, vecs::Vector{Vector{T}};
-                                plel::Bool=false, verbose::Bool=false,
+function stoch_profile_gradient(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T},
+                                dat::Vector{T}, dfuns::Vector{Function},
+                                vecs::Vector{Vector{T}}; plel::Bool=false,
+                                verbose::Bool=false,
                                 shuffle::Bool=false)::Vector{T} where{T<:Number,N,A,Fn}
   # Test stuff:
   HK.U == nothing                  || error("The matrix needs to be factorized for this to work.")
@@ -69,7 +78,10 @@ function stoch_profile_gradient(K::KernelMatrix{T,N,A,Fn}, HK::KernelHODLR{T}, d
     saa_shuffle!(opts.saav)
   end
   # Loop over the functions:
-  out = map(df -> HODLR_p_grad_term(K, HK, df, dat, vecs, plel=plel, verbose=verbose), dfuns)
+  out = zeros(length(dfuns))
+  for (j, df) in enumerate(dfuns)
+    out[j] = HODLR_p_grad_term(K, HK, df, dat, vecs, plel=plel, verbose=verbose)
+  end
   return out
 end
 
