@@ -1,15 +1,16 @@
 
-using Distributed, LinearAlgebra, StaticArrays, Ipopt
+using LinearAlgebra, StaticArrays, Ipopt
+
+# Load in the interface file:
+include("../interface/ipoptinterface.jl")
 
 # Declare the kernel function and its derivatives in the necessary forms for every worker:
-@everywhere begin
-  using  KernelMatrices, KernelMatrices.HODLR
-  import KernelMatrices: mt1_kernfun, mt1_kernfun_d1, mt1_kernfun_d2
-  import KernelMatrices: mt1_kernfun_d1_d2, mt1_kernfun_d2_d2
-  kernfun  = mt1_kernfun
-  dfuns    = [mt1_kernfun_d1, mt1_kernfun_d2]
-  d2funs   = [[HODLR.ZeroFunction(), mt1_kernfun_d1_d2], [mt1_kernfun_d2_d2]]
-end
+using  KernelMatrices, KernelMatrices.HODLR
+import KernelMatrices: mt1_kernfun, mt1_kernfun_d1, mt1_kernfun_d2
+import KernelMatrices: mt1_kernfun_d1_d2, mt1_kernfun_d2_d2
+kernfun  = mt1_kernfun
+dfuns    = [mt1_kernfun_d1, mt1_kernfun_d2]
+d2funs   = [[HODLR.ZeroFunction(), mt1_kernfun_d1_d2], [mt1_kernfun_d2_d2]]
 
 # Set the size of the simulated problem and generate the maximum likelihood options:
 # (see the test_fit_trustregion.jl) for detailed annotations).

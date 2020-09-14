@@ -6,6 +6,8 @@
 include("../example/basicexample.jl")
 using KernelMatrices.HODLR, Test
 
+BLAS.set_num_threads(1)
+
 # Make sure this isn't run for a giant matrix that won't fit in memory:
 N < 2^11 || error("This script is for testing on small matrices only.")
 
@@ -17,7 +19,7 @@ tmp1 = zeros(N)
 tmp2 = zeros(N)
 
 # Assemble the HODLR matrix, factorize it, get full for comparison:
-HK   = HODLR.KernelHODLR(K, eps(), mrnk, lvl, nystrom=true)
+HK   = HODLR.KernelHODLR(K, eps(), mrnk, lvl, nystrom=true, sorted=true)
 HKf  = HODLR.full(HK)
 HODLR.symmetricfactorize!(HK, verbose=false)
 W    = HODLR.full(HK.W)

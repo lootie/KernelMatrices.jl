@@ -6,6 +6,11 @@
 function symmetricfactorize!(K::KernelHODLR{T}; plel::Bool=false, 
                              verbose::Bool=false) where{T<:Number}
 
+  # If parallel option is given, warn about BLAS.set_num_threads():
+  if plel && verbose
+    @info "Without BLAS.set_num_threads(1), you may not see much multi-threaded speedup." maxlog=1
+  end
+
   # Get the cholfact of each of the leaves, so that K.L[j] = W[j]*W[j]'. Then,
   # get the inverse of each of those symmetric factors.
   verbose && println("Computing factors for leaves...")
@@ -13,9 +18,7 @@ function symmetricfactorize!(K::KernelHODLR{T}; plel::Bool=false,
 
   # Now, apply the leaf inverses blockwise to each of the U factors at all levels.
   verbose && println("Applying factor inverse to each non-leaf...")
-  for lv in eachindex(K.U)
-    invapply!(LW, lv, K.U, K.V)
-  end
+  foreachf(lv->invapply!(LW, K.U[lv], K.V[lv]), eachindex(K.U), plel)
 
   # Declare the array for all the non-leaf symmetric factor terms:
   nonleafW = Vector{Vector{LowRankW{T}}}(undef, length(K.U))
@@ -28,8 +31,9 @@ function symmetricfactorize!(K::KernelHODLR{T}; plel::Bool=false,
     nonleafW[lv] = mapf(x->lrsymfact(x[1], x[2]), zip(K.V[lv], K.U[lv]), plel)
     # Apply their inverse to all the lower levels.
     verbose && println("Applying level $lv of non-leaf inverses to each non-leaf...")
-    for lev in (lv+1):length(K.U)
-      invapply!(nonleafW[lv], lev, K.U, K.V)
+    levs = (lv+1):length(K.U)
+    if length(levs) > 0
+      foreachf(lev->invapply!(nonleafW[lv], K.U[lev], K.V[lev]), levs, plel)
     end
   end
   

@@ -1,8 +1,8 @@
 
 module HODLR
 
-  using Pkg, StaticArrays, KernelMatrices, SharedArrays, Transducers
-  using Statistics, LinearAlgebra, Distributed, Random
+  using Pkg, StaticArrays, KernelMatrices, ThreadPools
+  using Statistics, LinearAlgebra, Random
 
   import NearestNeighbors
   import KernelMatrices: KernelMatrix, submatrix, ACA, full, nystrom_uvt, NystromKernel
@@ -35,8 +35,11 @@ module HODLR
 
   include("./src/exactmaxlik.jl")
 
+  #=
   if haskey(Pkg.installed(), "Ipopt")
     using Ipopt
     include("./src/ipoptinterface.jl")
   end
+  =#
+
 end

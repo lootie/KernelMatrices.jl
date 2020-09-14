@@ -9,7 +9,7 @@ function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64,
   # Warn once about point ordering:
   if !sorted
     @warn "No default point sorting is done for you, and if your points are
-    not sorted properly than the approximation can be very poor." maxlog=1
+    not sorted properly the approximation can be very poor." maxlog=1
   end
 
   # Check for symmetry:
@@ -29,7 +29,7 @@ function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64,
     end
     K.x1 == K.x2 || error("Need x1 == x2 for Nystrom approx.")
     nyind = Int64.(round.(LinRange(1, size(K)[1], maxrank)))
-    nyker = NystromKernel((x,y)->K.kernel(x,y,K.parms), K.x1[nyind], true)
+    nyker = NystromKernel(K.x1[nyind], cholesky!(Symmetric(K[nyind, nyind])))
   end
 
   level == 0 && @warn "You are using a level-0 HODLR factorization, i.e. dense linear algebra.
@@ -46,7 +46,7 @@ function KernelHODLR(K::KernelMatrix{T,N,A,Fn}, ep::Float64, maxrank::Int64,
       nonleafinds[j]
       tmpUV = mapf(x->nystrom_uvt(submatrix(K, x), nyker, plel), nonleafinds[j], plel)
     else
-      tmpUV = mapf(x->ACA(submatrix(K, x), ep, maxrank), nonleafinds[j], plel)
+      tmpUV = mapf(x->ACA(submatrix(K, x), ep, maxrank),         nonleafinds[j], plel)
     end
     U[j] = map(x->x[1], tmpUV)
     V[j] = map(x->x[2], tmpUV)

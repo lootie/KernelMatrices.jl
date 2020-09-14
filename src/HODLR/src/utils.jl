@@ -3,12 +3,18 @@
 @inline t_mul(A, B) = transpose(A)*B
 
 function mapf(f::Function, v, plel::Bool, ptype::Symbol=:threaded)
-  if plel && nworkers() > 1 && ptype == :distributed
-    return pmap(f, v)
-  elseif plel && Threads.nthreads() > 1 && ptype == :threaded
-    return tcollect(Map(f), v)
+  if plel && Threads.nthreads() > 1 && ptype == :threaded
+    return ThreadPools.bmap(f, v)
   else
     return map(f, v)
+  end
+end
+
+function foreachf(f::Function, v, plel::Bool, ptype::Symbol=:threaded)
+  if plel && Threads.nthreads() > 1 && ptype == :threaded
+    return ThreadPools.bforeach(f, v)
+  else
+    return foreach(f, v)
   end
 end
 
@@ -51,12 +57,12 @@ end
 # just be BDiagonal(Wvec)\M. That's really what's going on here. But to avoid
 # copies, I play a slightly more ornate game of breaking up the Wvec into the
 # right sized pieces to apply to each Uj and Vj individually.
-function invapply!(Wvec, lvl::Int64,
-                   Uvec::Vector{Vector{Matrix{Float64}}}, 
-                   Vvec::Vector{Vector{Matrix{Float64}}})::Nothing where{T<:Number}
-  stepsz = div(length(Wvec), 2*length(Uvec[lvl]))
+function invapply!(Wvec,
+                   Uvec::Vector{Matrix{Float64}}, 
+                   Vvec::Vector{Matrix{Float64}})::Nothing where{T<:Number}
+  stepsz = div(length(Wvec), 2*length(Uvec))
   ind    = collect(1:stepsz)
-  for (Vj, Uj) in zip(Vvec[lvl], Uvec[lvl])
+  for (Vj, Uj) in zip(Vvec, Uvec)
     ldiv!(BDiagonal(Wvec[ind]),         Vj) # @spawn?
     ldiv!(BDiagonal(Wvec[ind.+stepsz]), Uj) # @spawn?
     ind .+= 2*stepsz

@@ -148,8 +148,8 @@ end
 function gpsimulate(kernel::Function, locs::AbstractVector, parms::Vector, 
                     opts::Union{Nothing, Maxlikopts}=nothing; 
                     exact::Bool=false, kdtreesort::Bool=false)
-  !kdtreesort && @warn begin
-    "Not sortin data can adversely affect approximation quality..." maxlog=1
+  if !kdtreesort 
+  @warn "Not sorting data can adversely affect approximation quality..." maxlog=1
   end
   # Get the locations, sorted if requested:
   lcss = kdtreesort ? NearestNeighbors.KDTree(locs).data : locs

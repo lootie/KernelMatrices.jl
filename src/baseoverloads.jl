@@ -23,11 +23,13 @@ end
 
 function full(M::KernelMatrix{T,N,A,Fn}, plel::Bool=false)::Matrix{T} where{T,N,A,Fn}
   !plel && return M[:,:]
-  out = SharedArray{T}(size(M, 1), size(M, 2))
-  @sync @distributed for I in CartesianIndices(out)
-    @inbounds out[I] = M[I[1], I[2]] 
+  out = Matrix{T}(undef, size(M, 1), size(M, 2))
+  Threads.@threads for k in 1:size(M,2)
+    @simd for j in 1:size(M,1)
+      @inbounds out[j,k] = M[j,k]
+    end
   end
-  return collect(out)
+  return out
 end
 
 function mul!(dest::StridedVector, M::KernelMatrix{T,N,A,Fn}, src::StridedVector) where{T<:Number,N,A,Fn}

@@ -1,19 +1,17 @@
 
-using Distributed, LinearAlgebra, StaticArrays
+using LinearAlgebra, StaticArrays
 
 # Declare the kernel function and its derivatives in the necessary forms for every worker:
-@everywhere begin
-  using  KernelMatrices, KernelMatrices.HODLR
-  import KernelMatrices: ps1_kernfun, ps1_kernfun_d2, ps1_kernfun_d2_d2
-  import KernelMatrices: sm1_kernfun, sm1_kernfun_d1, sm1_kernfun_d2
-  import KernelMatrices: sm1_kernfun_d1_d2, sm1_kernfun_d2_d2
-  kernfun  = ps1_kernfun
-  dfuns    = [ps1_kernfun_d2]
-  d2funs   = Vector{Vector{Function}}(undef, 1) ; d2funs[1] = [ps1_kernfun_d2_d2]
-  fkernfun = sm1_kernfun
-  fdfuns   = [sm1_kernfun_d1, sm1_kernfun_d2]
-  fd2funs  = [[HODLR.ZeroFunction(), sm1_kernfun_d1_d2], [sm1_kernfun_d2_d2]]
-end
+using  KernelMatrices, KernelMatrices.HODLR
+import KernelMatrices: ps1_kernfun, ps1_kernfun_d2, ps1_kernfun_d2_d2
+import KernelMatrices: sm1_kernfun, sm1_kernfun_d1, sm1_kernfun_d2
+import KernelMatrices: sm1_kernfun_d1_d2, sm1_kernfun_d2_d2
+kernfun  = ps1_kernfun
+dfuns    = [ps1_kernfun_d2]
+d2funs   = Vector{Vector{Function}}(undef, 1) ; d2funs[1] = [ps1_kernfun_d2_d2]
+fkernfun = sm1_kernfun
+fdfuns   = [sm1_kernfun_d1, sm1_kernfun_d2]
+fd2funs  = [[HODLR.ZeroFunction(), sm1_kernfun_d1_d2], [sm1_kernfun_d2_d2]]
 
 # Set the size of the simulated problem and generate the maximum likelihood options
 # for the PROFILE likelihood:

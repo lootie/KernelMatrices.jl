@@ -26,16 +26,3 @@ mutable struct NystromKernel{T, A}  <: Function
   F::Union{Cholesky{T, Matrix{T}}, BunchKaufman{T, Matrix{T}}}
 end
 
-function NystromKernel(kern::Function, landmark, ispd::Bool)::NystromKernel
-  T   = typeof(kern(landmark[1], landmark[1]))
-  M   = zeros(T, length(landmark), length(landmark))
-  for j in eachindex(landmark)
-    for k in eachindex(landmark)
-      @inbounds M[j,k] = kern(landmark[j], landmark[k])
-    end
-  end
-  F  = ispd ? cholesky!(Symmetric(M)) : bkfact!(Symmetric(M))
-  pt = 
-  return NystromKernel(landmark, F)
-end
-

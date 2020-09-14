@@ -1,6 +1,5 @@
 
-using Distributed, KernelMatrices, StaticArrays, NearestNeighbors
-@everywhere using LinearAlgebra
+using Distributed, KernelMatrices, StaticArrays, NearestNeighbors, LinearAlgebra
 
 # Get the points, so that K[i,j] = kernfun(pts[i], pts[k], parms):
 dim      = 2
@@ -14,7 +13,7 @@ psorted  = NearestNeighbors.KDTree(pts).data   # K-D tree sort
 
 # Choose a kernel function, which I define @everywhere in case you want to
 # parallelize in HODLR.jl:
-@everywhere function kernfun(x1, x2, parms)
+function kernfun(x1, x2, parms)
   out = abs2(parms[1])/(1.0 + abs2(parms[2]*(norm(x1-x2))))
   if x1 == x2       # fudge factor
     out += 1.0e-12  # to stay

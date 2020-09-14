@@ -9,6 +9,8 @@ println()
 include("basicexample.jl")
 using  KernelMatrices.HODLR
 
+BLAS.set_num_threads(1)
+
 # Assemble the HODLR matrix:
 vrbs    = false              # Verbose flag:  Show timing?
 plel    = true               # Parallel flag: Do the operation in parallel?
