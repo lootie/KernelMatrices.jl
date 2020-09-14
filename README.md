@@ -115,7 +115,7 @@ that.
 # Usage
 This package is unregistered, so please install with
 ```julia
-Pkg> add git://bitbucket.org/cgeoga/KernelMatrices.jl.git #v0.6.0
+Pkg> add git://bitbucket.org/cgeoga/KernelMatrices.jl.git #v0.8
 ```
 The figures and results of the paper were generated with version `0.3`, so if
 you want to run that exact code again please add that version instead. If you
