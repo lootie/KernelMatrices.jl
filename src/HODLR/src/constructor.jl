@@ -77,7 +77,10 @@ function DerivativeHODLR(K::KernelMatrix{T,N,A,Fn}, dfun::Function, HK::KernelHO
   dK     = KernelMatrix(K.x1, K.x2, K.parms, dfun)
 
   # Get the leaves in position:
-  leaves = mapf(x->Symmetric(full(submatrix(dK, x), plel)), HK.leafindices, plel)
+  # TODO (cg 2020/09/14 16:09): oddly, as below, this mapf call with plel=true
+  # doesn't do anything. No other pieces of this code seem to have this issue,
+  # but something short circuits here.
+  leaves = mapf(x->Symmetric(full(submatrix(dK, x), false)), HK.leafindices, false)
 
   # Get the non-leaves in place:
   B      = Vector{Vector{DerivativeBlock{T}}}(undef, HK.lvl)
@@ -85,7 +88,7 @@ function DerivativeHODLR(K::KernelMatrix{T,N,A,Fn}, dfun::Function, HK::KernelHO
     B[j] = mapf(x->DBlock(submatrix(K, x), dfun, lndmk, plel),
                 HK.nonleafindices[j], plel)
   end
-
+ 
   return DerivativeHODLR(HK.ep, HK.lvl, HK.leafindices,
                          HK.nonleafindices, leaves, B, S, Sj)
 end
@@ -97,7 +100,12 @@ function SecondDerivativeLeaves(K::KernelMatrix{T,N,A,Fn}, djk::Function,
                                 lfi::AbstractVector,
                                 plel::Bool=false) where{T<:Number,N,A,Fn}
   d2K    = KernelMatrix(K.x1, K.x2, K.parms, djk)
-  return mapf(x->Symmetric(full(submatrix(d2K, x), plel)), lfi, plel)
+
+  # TODO (cg 2020/09/14 15:44): oddly, this mapf call with plel=true doesn't do
+  # anything and returns an empty Symmetric[].
+  #return mapf(x->Symmetric(full(submatrix(d2K, x), plel)), lfi, plel)
+  
+  return mapf(x->Symmetric(full(submatrix(d2K, x), false)), lfi, false)
 end
 
 

@@ -1,4 +1,7 @@
 
+using KernelMatrices, KernelMatrices.HODLR
+import KernelMatrices.HODLR: Maxlikdata, Maxlikopts, stoch_gradient, stoch_hessian, stoch_fisher
+
 # Objective function struct that carries around the factorized kernel matrix
 # If you call this struct with the arguments expected by Ipopt for
 # eval_f, eval_grad_f, or eval_h, it will provide the corresponding output

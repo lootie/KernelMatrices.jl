@@ -26,7 +26,7 @@ data     = HODLR.gpsimulate(kernfun, trueprms, nsz, 2, 100.0, exact=true)
 # Estimate the kernel parameters using the above specified options:
 initprms = [1.0, 3.0]
 hess_type = :HESSIAN
-prob = HODLR.Maxlikproblem(
+prob = Maxlikproblem(
   initprms,
   data, opts,
   lb=[0.0, 0.0],

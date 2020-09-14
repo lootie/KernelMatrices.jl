@@ -1,7 +1,7 @@
 name = "KernelMatrices"
 uuid = "b172bcd2-82ed-11e9-108e-f9294c34b9e6"
 authors = ["Chris Geoga <cgeoga@protonmail.com>"]
-version = "0.8.0"
+version = "0.8.1"
 
 [deps]
 IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"

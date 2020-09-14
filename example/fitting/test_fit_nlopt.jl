@@ -21,7 +21,7 @@ data     = HODLR.gpsimulate(kernfun, trueprms, nsz, 2, 100.0, exact=true)
 
 # Estimate the kernel parameters using the above specified options:
 initprms = [1.0, 3.0]
-opt = Opt(:LD_LBFGS, 2)
+opt = Opt(:LD_MMA, 2)
 min_objective!(opt, (x,p) -> HODLR.nll_objective(x, p, data, opts))
 ftol_rel!(opt, 1.0e-5)
 println("Optimizing:")

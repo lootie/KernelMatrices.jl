@@ -1,5 +1,5 @@
 
-using LinearAlgebra, StaticArrays
+using LinearAlgebra, StaticArrays, GPMaxlik
 
 # Declare the kernel function and its derivatives in the necessary forms for every worker:
 using  KernelMatrices, KernelMatrices.HODLR
@@ -64,3 +64,4 @@ for j in eachindex(trueprms)
   println("\t $(round(fitd[j], digits=4))       $(round(fuld[j], digits=4))")
 end
 println()
+
