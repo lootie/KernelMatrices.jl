@@ -5,7 +5,6 @@ module KernelMatrices
 
   using StaticArrays, SpecialFunctions, LinearAlgebra
 
-  import IterTools
   import LinearAlgebra: mul!
 
   export KernelMatrix, ACA, full
