@@ -36,7 +36,7 @@ function lrsymfact(U12::Matrix{T}, U21::Matrix{T})::LowRankW{T} where{T<:Number}
   qr12  = qr!(U12)
   qr21  = qr!(U21)
   R1R2t = qr12.R*qr21.R'
-  X     = cholesky(Symmetric([I R1R2t; R1R2t' I])).L-I
+  X     = cholesky!(Symmetric([I R1R2t; R1R2t' I])).L-I
   return LowRankW(cat(Matrix(qr12.Q), Matrix(qr21.Q), dims=[1,2]), X)
 end
 
@@ -59,7 +59,7 @@ end
 # right sized pieces to apply to each Uj and Vj individually.
 function invapply!(Wvec,
                    Uvec::Vector{Matrix{Float64}}, 
-                   Vvec::Vector{Matrix{Float64}})::Nothing where{T<:Number}
+                   Vvec::Vector{Matrix{Float64}})
   stepsz = div(length(Wvec), 2*length(Uvec))
   ind    = collect(1:stepsz)
   for (Vj, Uj) in zip(Vvec, Uvec)

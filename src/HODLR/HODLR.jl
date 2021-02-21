@@ -31,7 +31,7 @@ module HODLR
 
   include("./src/maxlikfunctions.jl")
 
-  include("./src/optimization.jl")
+  #include("./src/optimization.jl")
 
   include("./src/exactmaxlik.jl")
 

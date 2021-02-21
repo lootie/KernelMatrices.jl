@@ -3,6 +3,9 @@
 # Bebendorf.  This implementation is an attempt to be as clean and readable as
 # possible, but has admittedly grown up a little bit. I probably should split
 # some of these things into helper functions.
+# 
+# TODO (cg 2021/02/21 12:42): this could probably benefit from some more use of
+# pre-allocation.
 function ACA(M::Union{Matrix{T}, KernelMatrix{T,N,A,Fn}}, rtol::Float64, 
              maxrank::Int64=0)::NTuple{2, Matrix{T}} where{T<:Number,N,A,Fn}
 
@@ -90,6 +93,10 @@ function nystrom_uvt(K::KernelMatrix{T,N,A,Fn}, NK::NystromKernel{T,A},
   return U,V
 end
 
+# TODO (cg 2021/02/21 12:43): these functions don't run anymore because I wrote
+# them before 1.0 (!) and don't use them, so never migrated away from the
+# A_mul_B syntax. Should do that at some point.
+#=
 # This is a very simple (and fast!) conversion from an ACA to a partial QR factorization,
 # as described in Halko 2011 p238. This is NOT a randomized factorization, and what comes
 # out will be numerically equivalent to U*V'.
@@ -108,6 +115,6 @@ function SVD_ACA(U::Matrix{T}, V::Matrix{T})::Tuple{Matrix{T}, Vector{T}, Matrix
   Uo       = UQ*DU
   return Uo, DS, DV
 end
-
+=#
 
 
