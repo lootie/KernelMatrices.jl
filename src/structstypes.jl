@@ -10,7 +10,8 @@ function KernelMatrix(pts, pts2, fn::Function)
   eltype(pts) == eltype(pts2) || error("Eltype of pts and pts2 must agree.")
   A  = eltype(pts)
   T  = typeof(fn(pts[1], pts2[1]))
-  return KernelMatrix{T,0,A,typeof(fn)}(pts, pts2, SVector{0, Float64}(), fn)
+  _f = (x,y,p) -> fn(x,y)
+  return KernelMatrix{T,0,A,typeof(_f)}(pts, pts2, SVector{0, Float64}(), _f)
 end
 
 function KernelMatrix(pts, pts2, prms, fn::Function)

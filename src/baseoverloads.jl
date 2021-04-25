@@ -7,16 +7,8 @@ Base.length(M::KernelMatrix{T,N,A,Fn})  where{T,N,A,Fn} = prod(size(M))
 
 # TODO (cg 2021/02/21 12:41): for this and the method below, perhaps add an
 # option with pre-allocated output buffers.
-function Base.getindex(M::KernelMatrix{T,0,A,Fn}, j, k)::Array{T} where{T,A,Fn}
-  return [M.kernel(x, y) for x in view(M.x1, j), y in view(M.x2, k)]
-end
-
 function Base.getindex(M::KernelMatrix{T,N,A,Fn}, j, k)::Array{T} where{T,N,A,Fn}
   return [M.kernel(x, y, M.parms) for x in view(M.x1, j), y in view(M.x2, k)]
-end
-
-function Base.getindex(M::KernelMatrix{T,0,A,Fn}, j::Int64, k::Int64)::T where{T,A,Fn} 
-  return M.kernel(M.x1[j], M.x2[k])
 end
 
 function Base.getindex(M::KernelMatrix{T,N,A,Fn}, j::Int64, k::Int64)::T where{T,N,A,Fn} 

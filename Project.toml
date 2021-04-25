@@ -1,7 +1,7 @@
 name = "KernelMatrices"
 uuid = "b172bcd2-82ed-11e9-108e-f9294c34b9e6"
 authors = ["Chris Geoga <cgeoga@protonmail.com>"]
-version = "0.8.2"
+version = "0.8.3"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
