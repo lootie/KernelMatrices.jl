@@ -1,7 +1,7 @@
 
 module HODLR
 
-  using StaticArrays, KernelMatrices, ThreadPools
+  using StaticArrays, KernelMatrices, Folds
   using Statistics, LinearAlgebra, Random
 
   import NearestNeighbors
