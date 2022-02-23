@@ -78,8 +78,9 @@ function DerivativeHODLR(K::KernelMatrix{T,N,A,Fn}, dfun::Function, HK::KernelHO
 
   # Get the leaves in position:
   # TODO (cg 2020/09/14 16:09): oddly, as below, this mapf call with plel=true
-  # doesn't do anything. No other pieces of this code seem to have this issue,
-  # but something short circuits here.
+  # (which you will hit if you make the last argument here plel instead of
+  # false) doesn't do anything. No other pieces of this code seem to have this
+  # issue, but something short circuits here. 
   leaves = mapf(x->Symmetric(full(submatrix(dK, x), false)), HK.leafindices, false)
 
   # Get the non-leaves in place:
@@ -103,8 +104,6 @@ function SecondDerivativeLeaves(K::KernelMatrix{T,N,A,Fn}, djk::Function,
 
   # TODO (cg 2020/09/14 15:44): oddly, this mapf call with plel=true doesn't do
   # anything and returns an empty Symmetric[].
-  #return mapf(x->Symmetric(full(submatrix(d2K, x), plel)), lfi, plel)
-  
   return mapf(x->Symmetric(full(submatrix(d2K, x), false)), lfi, false)
 end
 

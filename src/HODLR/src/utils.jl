@@ -3,19 +3,13 @@
 @inline t_mul(A, B) = transpose(A)*B
 
 function mapf(f::Function, v, plel::Bool, ptype::Symbol=:threaded)
-  if plel && Threads.nthreads() > 1 && ptype == :threaded
-    return ThreadPools.bmap(f, v)
-  else
-    return map(f, v)
-  end
+  ex = (plel && Threads.nthreads() > 1) ? ThreadedEx() : SequentialEx()
+  Folds.map(f, v, ex)
 end
 
 function foreachf(f::Function, v, plel::Bool, ptype::Symbol=:threaded)
-  if plel && Threads.nthreads() > 1 && ptype == :threaded
-    return ThreadPools.bforeach(f, v)
-  else
-    return foreach(f, v)
-  end
+  ex = (plel && Threads.nthreads() > 1) ? ThreadedEx() : SequentialEx()
+  Folds.foreach(f, v, ex)
 end
 
 function saa_shuffle!(v::Vector{Vector{T}})::Nothing where{T<:Number}
